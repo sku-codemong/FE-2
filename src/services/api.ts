@@ -633,21 +633,27 @@ async function requestTokenRefresh(): Promise<boolean> {
     return false;
   }
 
-  const refreshToken = getStoredRefreshToken();
-  if (!refreshToken) {
-    return false;
-  }
-
   if (!refreshPromise) {
     refreshPromise = (async () => {
-      const response = await fetch(`${API_BASE_URL}${REFRESH_ENDPOINT}`, {
+      const refreshToken = getStoredRefreshToken();
+      const hasRefreshToken = Boolean(refreshToken);
+
+      const requestInit: RequestInit = {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
         credentials: 'include',
-      });
+      };
+
+      if (hasRefreshToken) {
+        requestInit.headers = {
+          'Content-Type': 'application/json',
+        };
+        requestInit.body = JSON.stringify({
+          refreshToken,
+          refresh_token: refreshToken,
+        });
+      }
+
+      const response = await fetch(`${API_BASE_URL}${REFRESH_ENDPOINT}`, requestInit);
 
       if (!response.ok) {
         throw new Error('토큰 갱신에 실패했습니다.');
@@ -663,10 +669,14 @@ async function requestTokenRefresh(): Promise<boolean> {
         }
       }
       const { accessToken: newAccessToken, refreshToken: newRefreshToken } = extractTokens(data);
-      if (!newAccessToken) {
-        throw new Error('갱신된 토큰이 응답에 포함되어 있지 않습니다.');
+
+      // 토큰이 응답에 없을 수도 있으므로(서버가 쿠키만 재발급하는 경우) 존재할 때만 저장
+      if (newAccessToken !== undefined || newRefreshToken !== undefined) {
+        updateStoredTokens(
+          newAccessToken ?? null,
+          newRefreshToken ?? (hasRefreshToken ? refreshToken ?? null : null),
+        );
       }
-      updateStoredTokens(newAccessToken ?? null, newRefreshToken ?? refreshToken);
       return true;
     })()
       .catch(() => {
