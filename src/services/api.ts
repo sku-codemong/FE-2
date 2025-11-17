@@ -253,7 +253,6 @@ export function onFriendEvent(listener: (event: FriendEventPayload) => void) {
 
 // ========== Configuration ==========
 const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
-const USE_MOCK = !API_BASE_URL; // API URL이 없으면 Mock 데이터 사용
 
 const ACCESS_TOKEN_KEY = 'codemong.accessToken';
 const REFRESH_TOKEN_KEY = 'codemong.refreshToken';
@@ -1122,6 +1121,15 @@ const mockApi = {
     return;
   },
 
+  // 토큰 재발급 (Mock)
+  refreshToken: async (): Promise<{ accessToken: string; refreshToken: string }> => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return {
+      accessToken: MOCK_ACCESS_TOKEN,
+      refreshToken: MOCK_REFRESH_TOKEN,
+    };
+  },
+
   // 친구 삭제
   deleteFriend: async (friendUserId: string): Promise<void> => {
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -1769,6 +1777,18 @@ const realApi = {
     });
   },
 
+  // 토큰 재발급
+  refreshToken: async (): Promise<{ accessToken: string | null; refreshToken: string | null }> => {
+    const refreshed = await requestTokenRefresh();
+    if (!refreshed) {
+      throw new Error('토큰을 갱신할 수 없습니다.');
+    }
+    return {
+      accessToken: getStoredAccessToken(),
+      refreshToken: getStoredRefreshToken(),
+    };
+  },
+
   // 전체 공부 시간 (초) 조회
   getTotalStudyTime: async (options?: { userId?: string }): Promise<{ totalSeconds: number }> => {
     const params = new URLSearchParams();
@@ -2263,17 +2283,10 @@ const realApi = {
 };
 
 // ========== Export API ==========
-export const api = USE_MOCK
-  ? {
-      ...mockApi,
-      // getActiveSession은 실시간 상태 반환 (Mock만 지원)
-      getActiveSession: () => mockActiveSession,
-    }
-  : {
-      ...realApi,
-      // Real API는 비동기 함수를 동기처럼 사용할 수 없으므로 항상 null 반환
-      getActiveSession: () => null,
-    };
+export const api = {
+  ...realApi,
+  // Real API는 실시간 세션 상태를 직접 제공하지 않으므로 null 반환
+  getActiveSession: () => null,
+};
 
-export const isUsingMock = USE_MOCK;
 export const apiBaseUrl = API_BASE_URL;

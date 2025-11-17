@@ -1,0 +1,18 @@
+0 verbose cli /opt/homebrew/Cellar/node/24.6.0/bin/node /opt/homebrew/bin/npm
+1 info using npm@11.5.1
+2 info using node@v24.6.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/ijeong-wan/Downloads/Codemong-2 복사본/.npmrc
+5 silly config load:file:/opt/homebrew/etc/npmrc
+6 verbose title npm run lint
+7 verbose argv "run" "lint"
+8 verbose logfile logs-max:10 dir:/Users/ijeong-wan/Downloads/Codemong-2 복사본/.npm/_logs/2025-11-17T08_39_11_695Z-
+9 verbose logfile /Users/ijeong-wan/Downloads/Codemong-2 복사본/.npm/_logs/2025-11-17T08_39_11_695Z-debug-0.log
+10 silly logfile done cleaning log files
+11 verbose cwd /Users/ijeong-wan/Downloads/Codemong-2 복사본
+12 verbose os Darwin 24.2.0
+13 verbose node v24.6.0
+14 verbose npm  v11.5.1
+15 verbose exit 1
+16 verbose code 1
+17 error A complete log of this run can be found in: /Users/ijeong-wan/Downloads/Codemong-2 복사본/.npm/_logs/2025-11-17T08_39_11_695Z-debug-0.log
