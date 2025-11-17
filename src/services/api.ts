@@ -1740,7 +1740,7 @@ const realApi = {
     }));
   },
 
-  getOutgoingFriendRequests: async (): Promise<Array<{ id: string; toUserId: string }>> => {
+  getOutgoingFriendRequests: async (): Promise<Array<{ id: string; toUserId: string; status?: string; updated_at?: string; updatedAt?: string }>> => {
     const payload = await apiRequest<any>('/api/friends/requests/outgoing', { method: 'GET' });
     const list =
       (payload && (payload.requests || payload.data?.requests || payload.result?.requests)) ||
@@ -1757,6 +1757,9 @@ const realApi = {
           r.toUser?.id ??
           ''
       ),
+      status: r.status,
+      updated_at: r.updated_at,
+      updatedAt: r.updatedAt,
     }));
   },
 

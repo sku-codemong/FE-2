@@ -48,34 +48,6 @@ export function Navbar({ user, onLogout }: NavbarProps) {
 
   useEffect(() => {
     if (!user) return;
-    // 초기 배지 동기화: 받은 친구 요청 목록을 읽어와 미읽음으로 표시
-    (async () => {
-      try {
-        const readIds = getReadNotificationIds();
-        const incoming = await (api as any).getIncomingFriendRequests?.();
-        if (Array.isArray(incoming)) {
-          const initial = incoming.map((r: any) => {
-            const notificationId = `incoming_${r.id}`;
-            return {
-              id: notificationId,
-              type: 'friend_request' as const,
-              title: '친구 요청이 도착했어요',
-              message: `보낸 사람 ID: ${r.fromUserId ?? ''}`,
-              createdAt: new Date().toISOString(),
-              read: readIds.has(notificationId), // 로컬 스토리지에서 읽음 상태 확인
-            };
-          });
-          setNotifications((prev) => {
-            // 중복 방지
-            const prevIds = new Set(prev.map((n) => n.id));
-            const merged = [...prev, ...initial.filter((n) => !prevIds.has(n.id))];
-            return merged;
-          });
-        }
-      } catch {
-        // 무시
-      }
-    })();
     // 소켓 연결(있으면)
     initRealtime?.();
     const unsubscribe = onFriendEvent?.((event) => {
@@ -118,8 +90,22 @@ export function Navbar({ user, onLogout }: NavbarProps) {
           result: event.result,
         });
         
+        // 현재 사용자 ID를 문자열로 변환
+        const currentUserIdStr = String(user.id);
+        const fromUserIdStr = fromUserId ? String(fromUserId) : '';
+        const toUserIdStr = toUserId ? String(toUserId) : '';
+        
+        console.log('[Navbar] Checking notification recipients:', {
+          currentUserId: currentUserIdStr,
+          fromUserId: fromUserIdStr,
+          toUserId: toUserIdStr,
+          fromUserIdMatch: fromUserIdStr && currentUserIdStr === fromUserIdStr,
+          toUserIdMatch: toUserIdStr && currentUserIdStr === toUserIdStr,
+        });
+        
         // 요청 받은 사람(수락/거절한 사람)에게 알림
-        if (toUserId && String(user.id) === String(toUserId)) {
+        // 주의: 수락한 사람의 WebSocket에는 이벤트가 오지 않으므로 이 조건은 실행되지 않을 수 있음
+        if (toUserIdStr && currentUserIdStr === toUserIdStr) {
           console.log('[Navbar] Sending notification to request receiver (toUserId)');
           const notificationId = `sock_responded_${event.requestId}`;
           const message = event.result === 'accepted' 
@@ -138,24 +124,12 @@ export function Navbar({ user, onLogout }: NavbarProps) {
             ...prev,
           ]);
           
-          // 수락/거절한 사람은 여기서 처리 완료
+          toast.info(message);
           return;
         }
         
         // 요청 보낸 사람에게 결과 알림
         // fromUserId가 현재 사용자와 같으면 (요청을 보낸 사람) 알림 표시
-        const currentUserIdStr = String(user.id);
-        const fromUserIdStr = fromUserId ? String(fromUserId) : '';
-        const toUserIdStr = toUserId ? String(toUserId) : '';
-        
-        console.log('[Navbar] Checking notification recipients:', {
-          currentUserId: currentUserIdStr,
-          fromUserId: fromUserIdStr,
-          toUserId: toUserIdStr,
-          fromUserIdMatch: fromUserIdStr && currentUserIdStr === fromUserIdStr,
-          toUserIdMatch: toUserIdStr && currentUserIdStr === toUserIdStr,
-        });
-        
         if (fromUserIdStr && currentUserIdStr === fromUserIdStr) {
           console.log('[Navbar] Sending notification to request sender (fromUserId)');
           const notificationId = `sock_${event.requestId}`;
@@ -175,7 +149,7 @@ export function Navbar({ user, onLogout }: NavbarProps) {
           
           toast.info(message);
         } else if (!fromUserIdStr) {
-          console.log('[Navbar] fromUserId is empty or undefined');
+          console.log('[Navbar] fromUserId is empty or undefined - cannot send notification to sender');
         } else {
           console.log('[Navbar] Not sending notification - fromUserId mismatch:', {
             fromUserId: fromUserIdStr,
