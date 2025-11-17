@@ -188,11 +188,21 @@ export default function FriendProfileViewPage() {
         ? Math.round(totalSeconds / completedSessions.length)
         : 0;
 
+      let finalTotalSeconds = totalSeconds;
+      try {
+        const totalTimeResult = await (api as any).getTotalStudyTime?.({ userId: String(friendUserId) });
+        if (totalTimeResult && typeof totalTimeResult.totalSeconds === 'number') {
+          finalTotalSeconds = totalTimeResult.totalSeconds;
+        }
+      } catch (error) {
+        console.warn('[FriendProfile] Failed to fetch total study time:', error);
+      }
+
       setStats({
-        totalMinutes: Math.floor(totalSeconds / 60),
+        totalMinutes: Math.floor(finalTotalSeconds / 60),
         thisWeekMinutes: Math.floor(thisWeekSeconds / 60),
         avgSessionLength: Math.floor(avgSessionSeconds / 60),
-        totalSeconds,
+        totalSeconds: finalTotalSeconds,
         thisWeekSeconds,
         avgSessionSeconds,
       });

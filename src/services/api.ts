@@ -140,7 +140,7 @@ export interface Notification {
 
 // ========== Realtime (Socket) ==========
 type FriendEventPayload =
-  | { type: 'friend:request:received'; fromUserId: string; toUserId: string; requestId: string }
+  | { type: 'friend:request:received'; fromUserId: string; fromUserNickname?: string; toUserId: string; requestId: string }
   | { type: 'friend:request:responded'; toUserId?: string; friendUserId?: string; fromUserId?: string; fromUserNickname?: string; requestId: string; result: 'accepted' | 'rejected' };
 
 let socketInstance: any = null;
@@ -162,22 +162,21 @@ export async function initRealtime() {
     });
     socketInstance.on('friend:request:received', (payload: any) => {
       const req = payload?.request || {};
+      const fromUser = req?.from_user ?? payload?.from_user ?? {};
+      const toUser = req?.to_user ?? payload?.to_user ?? {};
       const event: FriendEventPayload = {
         type: 'friend:request:received',
         fromUserId: String(
           payload?.from_user_id ??
           payload?.fromUserId ??
-          req?.from_user_id ??
-          req?.fromUserId ??
-          req?.from_user?.id ??
+          fromUser?.id ??
           ''
         ),
+        fromUserNickname: fromUser?.nickname ?? fromUser?.name ?? fromUser?.userId ?? undefined,
         toUserId: String(
           payload?.to_user_id ??
           payload?.toUserId ??
-          req?.to_user_id ??
-          req?.toUserId ??
-          req?.to_user?.id ??
+          toUser?.id ??
           ''
         ),
         requestId: String(
@@ -1102,7 +1101,7 @@ const mockApi = {
   },
 
   // 친구 요청 보내기
-  sendFriendRequest: async (toUserId: string): Promise<{ requestId: string }> => {
+  sendFriendRequest: async (_toUserId: string): Promise<{ requestId: string }> => {
     await new Promise(resolve => setTimeout(resolve, 150));
     return { requestId: `req_${Date.now()}` };
   },
@@ -1118,7 +1117,7 @@ const mockApi = {
   },
 
   // 친구 요청 수락/거절/취소
-  respondFriendRequest: async (requestId: string, action: 'accept' | 'reject' | 'cancel'): Promise<void> => {
+  respondFriendRequest: async (_requestId: string, _action: 'accept' | 'reject' | 'cancel'): Promise<void> => {
     await new Promise(resolve => setTimeout(resolve, 100));
     return;
   },
@@ -1149,14 +1148,14 @@ const mockApi = {
   },
 
   // 친구 과목 목록 조회
-  getFriendSubjects: async (friendUserId: string): Promise<Subject[]> => {
+  getFriendSubjects: async (_friendUserId: string): Promise<Subject[]> => {
     await new Promise(resolve => setTimeout(resolve, 100));
     // Mock: 친구의 과목은 현재 사용자 과목과 동일하게 반환 (실제로는 별도 데이터 필요)
     return mockSubjects.filter(s => !s.archived);
   },
 
   // 친구 세션 목록 조회 (하루)
-  getFriendSessions: async (friendUserId: string, date?: string): Promise<Session[]> => {
+  getFriendSessions: async (_friendUserId: string, date?: string): Promise<Session[]> => {
     await new Promise(resolve => setTimeout(resolve, 100));
     let filtered = [...mockSessions];
     if (date) {
@@ -1770,6 +1769,27 @@ const realApi = {
     });
   },
 
+  // 전체 공부 시간 (초) 조회
+  getTotalStudyTime: async (options?: { userId?: string }): Promise<{ totalSeconds: number }> => {
+    const params = new URLSearchParams();
+    if (options?.userId) {
+      params.append('user_id', String(options.userId));
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const payload = await apiRequest<any>(`/api/sessions/total-time${query}`, { method: 'GET' });
+    const totalSeconds =
+      payload?.total_seconds ??
+      payload?.totalSeconds ??
+      payload?.total?.total_seconds ??
+      payload?.total?.total_sec ??
+      payload?.data?.total_seconds ??
+      payload?.result?.total_seconds ??
+      payload?.data?.totalSeconds ??
+      payload?.result?.totalSeconds ??
+      0;
+    return { totalSeconds: Number(totalSeconds) || 0 };
+  },
+
   getFriends: async (): Promise<Friend[]> => {
     const payload = await apiRequest<any>('/api/friends', { method: 'GET' });
     // 백엔드 응답: { ok: true, friends: [{ id, friend_user: { id, nickname, ... }, created_at }] }
@@ -1881,7 +1901,7 @@ const realApi = {
   },
 
   getSubjects: async (includeArchived = false): Promise<Subject[]> => {
-    const query = '?includeArchived=true';
+    const query = includeArchived ? '?includeArchived=true' : '';
     const payload = await apiRequest<any>(`/api/subjects${query}`);
     return extractArray<Subject>(payload);
   },

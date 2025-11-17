@@ -54,27 +54,26 @@ export function Navbar({ user, onLogout }: NavbarProps) {
       const readIds = getReadNotificationIds();
       
       if (event.type === 'friend:request:received') {
-        // 자신에게 온 요청만 표시
-        if (!user?.id || String(user.id) !== String((event as any).toUserId)) return;
+        if (!user?.id) return;
+        const toUserId = (event as any).toUserId;
+        if (toUserId && String(user.id) !== String(toUserId)) return;
         const notificationId = `sock_${event.requestId}`;
+        const requesterName = event.fromUserNickname || event.fromUserId;
         setNotifications(prev => [
           {
             id: notificationId,
             type: 'friend_request',
             title: '친구 요청이 도착했어요',
-            message: `${event.fromUserId} 님이 친구 요청을 보냈습니다.`,
+            message: `${requesterName} 님이 친구 요청을 보냈습니다.`,
             createdAt: new Date().toISOString(),
             read: readIds.has(notificationId), // 로컬 스토리지에서 읽음 상태 확인
           },
           ...prev,
         ]);
-        toast.info('새 친구 요청이 도착했습니다');
+        toast.info(`${requesterName} 님이 친구 요청을 보냈습니다`);
       } else if (event.type === 'friend:request:responded') {
         console.log('[Navbar] friend:request:responded event handler called', { user: user?.id, event });
-        if (!user?.id) {
-          console.log('[Navbar] No user, returning early');
-          return;
-        }
+        if (!user?.id) return;
         
         const responderId = event.friendUserId; // 수락/거절한 사람 (요청 받은 사람)
         const toUserId = event.toUserId; // 요청 받은 사람 ID
@@ -105,12 +104,12 @@ export function Navbar({ user, onLogout }: NavbarProps) {
         
         // 요청 받은 사람(수락/거절한 사람)에게 알림
         // 주의: 수락한 사람의 WebSocket에는 이벤트가 오지 않으므로 이 조건은 실행되지 않을 수 있음
-        if (toUserIdStr && currentUserIdStr === toUserIdStr) {
+        if ((!event.toUserId || toUserIdStr === '') || (toUserIdStr && currentUserIdStr === toUserIdStr)) {
           console.log('[Navbar] Sending notification to request receiver (toUserId)');
           const notificationId = `sock_responded_${event.requestId}`;
-          const message = event.result === 'accepted' 
-            ? `${fromUserNickname}님과 친구가 되었습니다!`
-            : `${fromUserNickname}님의 친구 추가를 거절하셨습니다.`;
+          const message = event.result === 'accepted'
+            ? `${fromUserNickname || '상대방'}님과 친구가 되었습니다!`
+            : '친구 요청을 거절하였습니다.';
           
           setNotifications(prev => [
             {
@@ -130,10 +129,12 @@ export function Navbar({ user, onLogout }: NavbarProps) {
         
         // 요청 보낸 사람에게 결과 알림
         // fromUserId가 현재 사용자와 같으면 (요청을 보낸 사람) 알림 표시
-        if (fromUserIdStr && currentUserIdStr === fromUserIdStr) {
+        if ((!event.fromUserId || fromUserIdStr === '') || (fromUserIdStr && currentUserIdStr === fromUserIdStr)) {
           console.log('[Navbar] Sending notification to request sender (fromUserId)');
           const notificationId = `sock_${event.requestId}`;
-          const message = `요청이 ${event.result === 'accepted' ? '수락' : '거절'}되었습니다.`;
+          const message = event.result === 'accepted'
+            ? '친구 요청이 수락되었습니다.'
+            : '친구 요청이 거절되었습니다.';
           
           setNotifications(prev => [
             {

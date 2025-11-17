@@ -167,7 +167,7 @@ export function ProfilePage() {
       // 실제로는 "한 주 동안 분배받은 일일 목표의 합"을 표시해야 하지만
       // 현재 데이터 구조로는 오늘의 일일 목표를 그대로 표시
       // (한 주 동안 분배받은 목표를 합산하려면 백엔드에서 각 날짜별 분배 데이터를 저장해야 함)
-      const chartData = subjectsData.filter(s => !s.archived).map((subject) => {
+      const chartData = (subjectsData as Subject[]).filter(s => !s.archived).map((subject) => {
         const subjectId = String(subject.id); // 타입 일치시키기
         const minutes = subjectMap.get(subjectId) || 0;
         const seconds = subjectSecondsMap.get(subjectId) || 0;
@@ -215,11 +215,21 @@ export function ProfilePage() {
         ? Math.round(totalSeconds / completedSessions.length)
         : 0;
 
+      let finalTotalSeconds = totalSeconds;
+      try {
+        const totalTimeResult = await (api as any).getTotalStudyTime?.();
+        if (totalTimeResult && typeof totalTimeResult.totalSeconds === 'number') {
+          finalTotalSeconds = totalTimeResult.totalSeconds;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch total study time:', error);
+      }
+
       setStats({
-        totalMinutes: Math.floor(totalSeconds / 60), // 하위 호환성 유지
+        totalMinutes: Math.floor(finalTotalSeconds / 60), // 하위 호환성 유지
         thisWeekMinutes: Math.floor(thisWeekSeconds / 60), // 하위 호환성 유지
         avgSessionLength: Math.floor(avgSessionSeconds / 60), // 하위 호환성 유지
-        totalSeconds, // 초 단위 추가
+        totalSeconds: finalTotalSeconds, // 초 단위 추가
         thisWeekSeconds, // 초 단위 추가
         avgSessionSeconds, // 초 단위 추가
       });
