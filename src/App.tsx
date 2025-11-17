@@ -37,6 +37,24 @@ function App() {
     initializeUser();
   }, []);
 
+  // 401이 발생하기 전에 미리 refresh를 호출해 서버를 웜업
+  useEffect(() => {
+    if (!user) return;
+
+    const warmUpRefresh = async () => {
+      try {
+        await api.refreshToken();
+      } catch (error) {
+        if (import.meta.env?.DEV) {
+          console.debug('Refresh warm-up skipped:', error);
+        }
+      }
+    };
+
+    // 로그인 직후/앱 진입 직후 한 번만 호출
+    warmUpRefresh();
+  }, [user?.id]);
+
   const handleLogin = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
