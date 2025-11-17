@@ -247,6 +247,39 @@ export function WeeklyReportPage() {
                       }}
                       locale={ko}
                       className="rounded-md border-0"
+                      modifiers={{
+                        weekStart: (() => {
+                          // 해당 주의 월요일
+                          const monday = new Date(weekStart + 'T00:00:00');
+                          monday.setHours(0, 0, 0, 0);
+                          return [monday];
+                        })(),
+                        weekEnd: (() => {
+                          // 해당 주의 일요일
+                          const monday = new Date(weekStart + 'T00:00:00');
+                          monday.setHours(0, 0, 0, 0);
+                          const sunday = new Date(monday);
+                          sunday.setDate(monday.getDate() + 6);
+                          return [sunday];
+                        })(),
+                        weekMiddle: (() => {
+                          // 해당 주의 화요일~토요일
+                          const monday = new Date(weekStart + 'T00:00:00');
+                          monday.setHours(0, 0, 0, 0);
+                          const middleDates: Date[] = [];
+                          for (let i = 1; i < 6; i++) {
+                            const date = new Date(monday);
+                            date.setDate(monday.getDate() + i);
+                            middleDates.push(date);
+                          }
+                          return middleDates;
+                        })(),
+                      }}
+                      modifiersClassNames={{
+                        weekStart: "!bg-[#9810fa] !text-white !rounded-l-full !rounded-r-none",
+                        weekEnd: "!bg-[#9810fa] !text-white !rounded-r-full !rounded-l-none",
+                        weekMiddle: "!bg-[#9810fa] !text-white !rounded-none",
+                      }}
                       classNames={{
                         day_selected: "!bg-[#9810fa] !text-white !rounded-full",
                       }}

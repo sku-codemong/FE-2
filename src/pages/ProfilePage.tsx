@@ -28,7 +28,7 @@ export function ProfilePage() {
     avgSessionSeconds: 0,
   });
   const [loading, setLoading] = useState(true);
-  const isViewingOther = !!userId;
+  const [viewingOther, setViewingOther] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -40,6 +40,7 @@ export function ProfilePage() {
       const me = await api.getMe();
       // 친구 프로필 보기: URL 파라미터가 있고, 내 ID와 다르면 조회 전용으로 처리
       if (userId && String(userId) !== String(me.id)) {
+        setViewingOther(true);
         try {
           const results = await (api as any).searchUsers?.(String(userId));
           const friend = Array.isArray(results)
@@ -84,6 +85,7 @@ export function ProfilePage() {
         return;
       }
       // 내 프로필 보기
+      setViewingOther(false);
       setUser(me);
     } catch (error) {
       toast.error('프로필을 불러오는데 실패했습니다');
@@ -93,38 +95,33 @@ export function ProfilePage() {
     }
 
     try {
-      // 이번 주 월요일부터 오늘까지 각 날짜별로 세션 조회
-      const weekStartISO = getWeekStart();
-      const weekStartDateStr = weekStartISO.split('T')[0]; // YYYY-MM-DD 형식
-      
+      // 이번 주 월요일부터 오늘까지 각 날짜별로 세션 조회 (주간 리포트와 동일한 방식)
       const today = new Date();
-      const todayDateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+      const todayStr = formatLocalYYYYMMDD(today);
+      const weekStartStr = getMonday(today);
+      const monday = new Date(weekStartStr + 'T00:00:00');
+      monday.setHours(0, 0, 0, 0);
       
-      // 이번 주의 각 날짜별로 세션 조회 (월요일부터 오늘까지 포함)
       const weekSessionPromises: Promise<Session[]>[] = [];
+      const currentDate = new Date(monday);
+      currentDate.setHours(0, 0, 0, 0);
       
-      // 날짜 문자열을 직접 파싱하여 날짜 숫자로 변환
-      const [startYear, startMonth, startDay] = weekStartDateStr.split('-').map(Number);
-      const [endYear, endMonth, endDay] = todayDateStr.split('-').map(Number);
-      
-      let currentDate = new Date(startYear, startMonth - 1, startDay);
-      const endDate = new Date(endYear, endMonth - 1, endDay);
-      
-      // 오늘까지 포함하도록 <= 사용
-      while (currentDate <= endDate) {
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const day = String(currentDate.getDate()).padStart(2, '0');
-        const dateStr = `${year}-${month}-${day}`;
-        
+      // 월요일부터 오늘까지 각 날짜별로 세션 조회
+      while (true) {
+        const dateStr = formatLocalYYYYMMDD(currentDate);
         weekSessionPromises.push(
           api.getSessions({ date: dateStr }).catch(() => [] as Session[])
         );
-        // 다음 날로 이동
-        currentDate.setDate(currentDate.getDate() + 1);
+        
+        if (dateStr === todayStr) {
+          break;
+        }
+        const nextDate = new Date(currentDate);
+        nextDate.setDate(nextDate.getDate() + 1);
+        currentDate.setTime(nextDate.getTime());
       }
       
-      console.log('Fetching sessions from', weekStartDateStr, 'to', todayDateStr, '- Total days:', weekSessionPromises.length);
+      console.log('Fetching sessions from', weekStartStr, 'to', todayStr, '- Total days:', weekSessionPromises.length);
       
       const [subjectsData, ...weekSessionsArrays] = await Promise.all([
         api.getSubjects(true),
@@ -135,7 +132,7 @@ export function ProfilePage() {
       
       // 주간 세션 필터링: 이미 각 날짜별로 조회했으므로, 상태만 확인
       const weekSessions = allWeekSessions.filter(
-        (session) => (session.status === 'completed' || session.status === 'stopped')
+        (session) => (session.status === 'completed' || (session as any).status === 'stopped')
       );
 
       // 디버깅: 세션 데이터 확인
@@ -189,7 +186,7 @@ export function ProfilePage() {
       setWeeklyData(chartData);
 
       // 초 단위로 합산
-      const completedSessions = allWeekSessions.filter((session) => session.status === 'completed' || session.status === 'stopped');
+      const completedSessions = allWeekSessions.filter((session) => session.status === 'completed' || (session as any).status === 'stopped');
       const totalSeconds = completedSessions.reduce((sum, session) => {
         let durationSec = 0;
         if (session.endTime) {
@@ -235,14 +232,23 @@ export function ProfilePage() {
     }
   };
 
-  const getWeekStart = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
+  // 주간 리포트와 동일한 방식으로 날짜 포맷팅
+  function formatLocalYYYYMMDD(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  // 이번 주 월요일 구하기 (주간 리포트와 동일)
+  function getMonday(date: Date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.getFullYear(), d.getMonth(), diff);
     monday.setHours(0, 0, 0, 0);
-    return monday.toISOString();
-  };
+    return formatLocalYYYYMMDD(monday);
+  }
 
   if (loading) {
     return (
@@ -307,7 +313,7 @@ export function ProfilePage() {
           {/* 헤더 */}
           <div className="h-[24px] w-full flex items-center justify-between">
             <p className="font-normal leading-[24px] text-[16px] text-neutral-950">프로필</p>
-            {user && !isViewingOther && (
+            {user && !viewingOther && (
               <Link to={`/profile/edit/${user.id}`}>
                 <button className="bg-white border border-[rgba(0,0,0,0.1)] rounded-[8px] px-4 h-[36px] text-[14px] text-neutral-950 hover:bg-gray-50 transition-colors flex items-center gap-2">
                   <Edit className="w-4 h-4" />
@@ -337,15 +343,11 @@ export function ProfilePage() {
                 <div className="flex items-center gap-4">
                   <span className="text-[14px] text-[#4B5563] w-20">성별</span>
                   <span className="text-[14px] text-neutral-950">
-                    {user.gender === 'male'
+                    {user.gender === 'Male'
                       ? '남자'
-                      : user.gender === 'female'
+                      : user.gender === 'Female'
                         ? '여자'
-                        : user.gender === 'Male'
-                          ? '남자'
-                          : user.gender === 'Female'
-                            ? '여자'
-                            : '성별 미설정'}
+                        : '성별 미설정'}
                   </span>
                 </div>
               </div>
@@ -353,7 +355,7 @@ export function ProfilePage() {
           )}
 
           {/* 다른 사용자 조회 시에는 통계 블록 숨김 */}
-          {!isViewingOther && (
+          {!viewingOther && (
           <div className="h-[158px] w-full grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* 총 학습 시간 */}
             <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[25px] flex flex-col gap-[32px]">
@@ -397,7 +399,7 @@ export function ProfilePage() {
           )}
 
           {/* 다른 사용자 조회 시에는 차트 숨김 */}
-          {!isViewingOther && (
+          {!viewingOther && (
           <div className="bg-white h-[414px] rounded-[14px] border border-[rgba(0,0,0,0.1)] w-full">
             <div className="p-[25px]">
               <p className="font-normal leading-[24px] text-[16px] text-neutral-950 mb-[40px]">이번 주 과목별 학습 시간</p>
@@ -432,7 +434,7 @@ export function ProfilePage() {
                       wrapperStyle={{ fontSize: '16px', paddingTop: '20px' }} 
                       iconType="square"
                       align="center"
-                      formatter={(value, entry: any) => (
+                      formatter={(value) => (
                         <span style={{ color: '#111827' }}>{value}</span>
                       )}
                     />
@@ -446,7 +448,7 @@ export function ProfilePage() {
           )}
 
           {/* 다른 사용자 조회 시에는 진행상황/리포트 숨김 */}
-          {!isViewingOther && (
+          {!viewingOther && (
           <div className="gap-[24px] grid grid-cols-1 md:grid-cols-2 h-auto w-full">
             {/* 과목별 진행 상황 */}
             <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[25px]">

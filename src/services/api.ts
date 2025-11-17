@@ -59,6 +59,7 @@ export interface Session {
   startTime: string;
   endTime?: string;
   duration: number; // minutes
+  duration_sec?: number; // seconds (for more precise calculations)
   status: 'active' | 'completed' | 'manual';
   note?: string | null;
 }
@@ -81,10 +82,11 @@ function normalizeSession(data: any): Session {
 
   return {
     id: String(data.id ?? ''),
-    subjectId: String(data.subject_id ?? data.subjectId ?? ''),
+    subjectId: String(data.subject_id ?? data.subjectId ?? data.subject?.id ?? ''),
     startTime: startAt ? new Date(startAt).toISOString() : new Date().toISOString(),
     endTime: endAt ? new Date(endAt).toISOString() : undefined,
     duration: durationMin,
+    duration_sec: durationSec, // 초 단위도 저장 (더 정확한 계산을 위해)
     status: status as 'active' | 'completed' | 'manual',
     note: data.note ?? null,
   };
@@ -139,7 +141,7 @@ export interface Notification {
 // ========== Realtime (Socket) ==========
 type FriendEventPayload =
   | { type: 'friend:request:received'; fromUserId: string; toUserId: string; requestId: string }
-  | { type: 'friend:request:responded'; toUserId: string; requestId: string; result: 'accepted' | 'rejected' };
+  | { type: 'friend:request:responded'; toUserId?: string; friendUserId?: string; requestId: string; result: 'accepted' | 'rejected' };
 
 let socketInstance: any = null;
 const friendEventListeners = new Set<(event: FriendEventPayload) => void>();
@@ -200,14 +202,19 @@ export async function initRealtime() {
         normalized === 'approved';
       const event: FriendEventPayload = {
         type: 'friend:request:responded',
-        toUserId: String(
+        toUserId: (payload?.to_user_id ?? payload?.toUserId ?? req?.to_user_id ?? req?.toUserId ?? req?.to_user?.id) !== undefined
+          ? String(
           payload?.to_user_id ??
           payload?.toUserId ??
           req?.to_user_id ??
           req?.toUserId ??
           req?.to_user?.id ??
           ''
-        ),
+          )
+          : undefined,
+        friendUserId: (payload?.friend?.id ?? req?.friend?.id) !== undefined
+          ? String(payload?.friend?.id ?? req?.friend?.id)
+          : undefined,
         requestId: String(
           payload?.request_id ??
           payload?.requestId ??
@@ -1106,6 +1113,42 @@ const mockApi = {
     mockFriends = mockFriends.filter(f => f.userId !== friendUserId);
   },
 
+  // 친구 프로필 조회
+  getFriendProfile: async (friendUserId: string): Promise<User> => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    // Mock: 친구 목록에서 찾거나 기본 사용자 반환
+    const friend = mockFriends.find(f => f.userId === friendUserId);
+    if (friend) {
+      return normalizeUser({
+        id: friend.userId,
+        email: `${friend.userId}@example.com`,
+        nickname: friend.nickname,
+        name: friend.nickname,
+        grade: null,
+        gender: null,
+        isCompleted: true,
+      });
+    }
+    return normalizeUser({ ...mockCurrentUser });
+  },
+
+  // 친구 과목 목록 조회
+  getFriendSubjects: async (friendUserId: string): Promise<Subject[]> => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    // Mock: 친구의 과목은 현재 사용자 과목과 동일하게 반환 (실제로는 별도 데이터 필요)
+    return mockSubjects.filter(s => !s.archived);
+  },
+
+  // 친구 세션 목록 조회 (하루)
+  getFriendSessions: async (friendUserId: string, date?: string): Promise<Session[]> => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    let filtered = [...mockSessions];
+    if (date) {
+      filtered = filtered.filter(s => s.startTime.startsWith(date));
+    }
+    return filtered;
+  },
+
   getNotifications: async (): Promise<Notification[]> => {
     await new Promise(resolve => setTimeout(resolve, 100));
     // 최신순
@@ -1730,6 +1773,30 @@ const realApi = {
 
   deleteFriend: async (friendUserId: string): Promise<void> => {
     await apiRequest(`/api/friends/${friendUserId}`, { method: 'DELETE' });
+  },
+
+  // 친구 프로필 조회
+  getFriendProfile: async (friendUserId: string): Promise<User> => {
+    const payload = await apiRequest<any>(`/api/friends/${friendUserId}/profile`, { method: 'GET' });
+    return normalizeUser(payload);
+  },
+
+  // 친구 과목 목록 조회
+  getFriendSubjects: async (friendUserId: string): Promise<Subject[]> => {
+    const payload = await apiRequest<any>(`/api/friends/${friendUserId}/subjects`, { method: 'GET' });
+    return extractArray<Subject>(payload);
+  },
+
+  // 친구 세션 목록 조회 (하루)
+  getFriendSessions: async (friendUserId: string, date?: string): Promise<Session[]> => {
+    const params = new URLSearchParams();
+    if (date) {
+      params.append('date', date);
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const payload = await apiRequest<any>(`/api/friends/${friendUserId}/sessions${query}`, { method: 'GET' });
+    const sessions = payload.sessions || payload.items || payload.data?.sessions || payload.data?.items || payload.result?.sessions || payload.result?.items || (Array.isArray(payload) ? payload : []);
+    return sessions.map((s: any) => normalizeSession(s));
   },
 
   getNotifications: async (): Promise<Notification[]> => {

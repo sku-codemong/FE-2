@@ -11,6 +11,7 @@ import { SubjectEditPage } from './pages/SubjectEditPage';
 import { DailyReportPage } from './pages/DailyReportPage';
 import { WeeklyReportPage } from './pages/WeeklyReportPage';
 import { FriendsPage } from './pages/FriendsPage';
+import FriendProfileViewPage from './pages/FriendProfileViewPage';
 import { SignupPage } from './pages/SignupPage';
 import { api, clearAuthTokens, type User } from './services/api';
 
@@ -120,6 +121,10 @@ function App() {
         <Route
           path="/friends/:userId"
           element={user ? <FriendsPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/friends/:friendUserId/profile"
+          element={user ? <FriendProfileViewPage /> : <Navigate to="/login" replace />}
         />
 
         {/* 잘못된 경로는 로그인 페이지로 */}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, Session } from '../services/api';
 import { toast } from 'sonner';
 import { Users, UserPlus, Trophy, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -12,9 +12,18 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 
+interface FriendWithStats {
+  id: string;
+  userId: string;
+  nickname: string;
+  totalStudyMinutes: number;
+  weeklyStudyMinutes: number; // 일주일 학습 시간 (분)
+  weeklyStudySeconds: number; // 일주일 학습 시간 (초)
+}
+
 export function FriendsPage() {
   const navigate = useNavigate();
-  const [friends, setFriends] = useState<Array<{ id: string; userId: string; nickname: string; totalStudyMinutes: number }>>([]);
+  const [friends, setFriends] = useState<FriendWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   // const [friendUserId, setFriendUserId] = useState('');
@@ -47,10 +56,111 @@ export function FriendsPage() {
     loadFriends();
   }, []);
 
+  // 주간 리포트와 동일한 방식으로 날짜 포맷팅
+  function formatLocalYYYYMMDD(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  // 이번 주 월요일 구하기 (주간 리포트와 동일)
+  function getMonday(date: Date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return formatLocalYYYYMMDD(monday);
+  }
+
+  // 친구의 일주일 세션 데이터 가져와서 시간 계산 (초 단위 반환) - 주간 리포트와 동일한 방식
+  const loadFriendWeeklySessions = async (friendUserId: string): Promise<number> => {
+    try {
+      // 이번 주 월요일부터 오늘까지 각 날짜별로 세션 조회 (주간 리포트와 동일한 방식)
+      const today = new Date();
+      const todayStr = formatLocalYYYYMMDD(today);
+      const weekStartStr = getMonday(today);
+      const monday = new Date(weekStartStr);
+      monday.setHours(0, 0, 0, 0);
+      
+      const sessionPromises: Promise<Session[]>[] = [];
+      const currentDate = new Date(monday);
+      currentDate.setHours(0, 0, 0, 0);
+      
+      // 월요일부터 오늘까지 각 날짜별로 세션 조회
+      while (true) {
+        const dateStr = formatLocalYYYYMMDD(currentDate);
+        sessionPromises.push(
+          (api as any).getFriendSessions?.(friendUserId, dateStr).catch((err: any) => {
+            console.error(`Failed to load sessions for ${friendUserId} on ${dateStr}:`, err);
+            return [] as Session[];
+          })
+        );
+        
+        if (dateStr === todayStr) {
+          break;
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      const sessionArrays = await Promise.all(sessionPromises);
+      const allSessions = sessionArrays.flat();
+      console.log(`Total sessions loaded for friend ${friendUserId}:`, allSessions.length, allSessions);
+      
+      // 완료된 세션만 필터링 (주간 리포트와 동일)
+      const completedSessions = allSessions.filter(
+        (session: Session) => session.status === 'completed' || (session as any).status === 'stopped'
+      );
+      console.log(`Completed sessions for friend ${friendUserId}:`, completedSessions.length, completedSessions);
+      
+      // 초 단위로 합산 (주간 리포트와 동일한 방식)
+      const totalSeconds = completedSessions.reduce((sum: number, session: Session) => {
+        let durationSec = 0;
+        // endTime이 있으면 endTime - startTime을 사용 (가장 정확)
+        if (session.endTime) {
+          const start = new Date(session.startTime).getTime();
+          const end = new Date(session.endTime).getTime();
+          durationSec = Math.floor((end - start) / 1000);
+        } else if (session.duration_sec !== undefined) {
+          // duration_sec이 있으면 직접 사용
+          durationSec = session.duration_sec;
+        } else {
+          // duration은 분 단위이므로 초로 변환
+          durationSec = (session.duration || 0) * 60;
+        }
+        console.log(`Session ${session.id}: durationSec=${durationSec}, endTime=${session.endTime}, duration=${session.duration}, duration_sec=${session.duration_sec}`);
+        return sum + durationSec;
+      }, 0);
+      
+      console.log(`Total seconds for friend ${friendUserId}:`, totalSeconds, `from ${completedSessions.length} sessions`);
+      return totalSeconds;
+    } catch (error) {
+      console.error(`Failed to load sessions for friend ${friendUserId}:`, error);
+      return 0;
+    }
+  };
+
   const loadFriends = async () => {
     try {
       const data = await (api as any).getFriends();
-      setFriends(data);
+      
+      // 각 친구의 일주일 학습 시간 계산
+      const friendsWithStats = await Promise.all(
+        data.map(async (friend: any) => {
+          const weeklySeconds = await loadFriendWeeklySessions(friend.userId);
+          return {
+            ...friend,
+            weeklyStudySeconds: weeklySeconds,
+            weeklyStudyMinutes: Math.floor(weeklySeconds / 60), // 하위 호환성 유지
+          } as FriendWithStats;
+        })
+      );
+      
+      // 일주일 학습 시간(초) 기준으로 내림차순 정렬
+      friendsWithStats.sort((a, b) => b.weeklyStudySeconds - a.weeklyStudySeconds);
+      
+      setFriends(friendsWithStats);
     } catch (error) {
       toast.error('친구 목록을 불러오는데 실패했습니다');
     } finally {
@@ -119,10 +229,20 @@ export function FriendsPage() {
     }
   };
 
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}시간 ${mins}분`;
+  const formatTime = (totalSeconds: number) => {
+    if (!totalSeconds || totalSeconds === 0) {
+      return '0초';
+    }
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    
+    const parts: string[] = [];
+    if (hours > 0) parts.push(`${hours}시간`);
+    if (mins > 0) parts.push(`${mins}분`);
+    if (secs > 0) parts.push(`${secs}초`);
+    
+    return parts.length > 0 ? parts.join(' ') : '0초';
   };
 
   const openRequestsDialog = async (tab: 'incoming' | 'outgoing') => {
@@ -274,7 +394,7 @@ export function FriendsPage() {
                         <div className="flex items-center justify-center gap-2">
                           <Clock className="w-4 h-4 text-[#9810fa]" />
                           <span className="text-[14px] text-neutral-950">
-                            {formatTime(friend.totalStudyMinutes)}
+                            {formatTime(friend.weeklyStudySeconds)}
                           </span>
                         </div>
                       </div>
@@ -314,8 +434,8 @@ export function FriendsPage() {
                   <div
                     className="flex items-center gap-4 cursor-pointer"
                     onClick={() => {
-                      // 기존 프로필 페이지로 이동
-                      navigate(`/profile/${friend.userId}`);
+                      // 친구 프로필 페이지로 이동
+                      navigate(`/friends/${friend.userId}/profile`);
                     }}
                   >
                     {/* 순위 */}
@@ -348,7 +468,7 @@ export function FriendsPage() {
                     <div className="flex items-center gap-2 bg-purple-50 rounded-[8px] px-4 py-2">
                       <Clock className="w-4 h-4 text-[#9810fa]" />
                       <span className="text-[14px] text-neutral-950">
-                        {formatTime(friend.totalStudyMinutes)}
+                        {formatTime(friend.weeklyStudySeconds)}
                       </span>
                     </div>
                     <Button

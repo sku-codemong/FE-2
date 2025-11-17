@@ -68,8 +68,15 @@ export function Navbar({ user, onLogout }: NavbarProps) {
         ]);
         toast.info('새 친구 요청이 도착했습니다');
       } else if (event.type === 'friend:request:responded') {
-        // 내 요청에 대한 처리 결과만 표시
-        if (!user?.id || String(user.id) !== String(event.toUserId)) return;
+        // 요청 보낸 사람에게만 결과 노출
+        // 서버가 'friend' (수락자)만 내려주는 경우가 많으므로
+        // friendUserId(=수락자)가 나와 같으면 숨기고, 그 외에는 표시
+        if (user?.id) {
+          const responderId = (event as any).friendUserId;
+          if (responderId && String(user.id) === String(responderId)) {
+            return; // 수락자 본인 → 결과 알림 숨김
+          }
+        }
         setNotifications(prev => [
           {
             id: `sock_${event.requestId}`,
