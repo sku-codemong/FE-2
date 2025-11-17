@@ -141,7 +141,7 @@ export interface Notification {
 // ========== Realtime (Socket) ==========
 type FriendEventPayload =
   | { type: 'friend:request:received'; fromUserId: string; toUserId: string; requestId: string }
-  | { type: 'friend:request:responded'; toUserId?: string; friendUserId?: string; requestId: string; result: 'accepted' | 'rejected' };
+  | { type: 'friend:request:responded'; toUserId?: string; friendUserId?: string; fromUserId?: string; fromUserNickname?: string; requestId: string; result: 'accepted' | 'rejected' };
 
 let socketInstance: any = null;
 const friendEventListeners = new Set<(event: FriendEventPayload) => void>();
@@ -200,21 +200,26 @@ export async function initRealtime() {
         normalized === 'ok' ||
         normalized === 'success' ||
         normalized === 'approved';
+      
+      // 요청 보낸 사람 정보 추출 (from_user 객체에서 직접 추출)
+      const fromUser = payload?.from_user ?? payload?.fromUser ?? req?.from_user ?? req?.fromUser ?? {};
+      const fromUserIdRaw = fromUser?.id ?? payload?.from_user_id ?? payload?.fromUserId ?? req?.from_user_id ?? req?.fromUserId;
+      const fromUserId = fromUserIdRaw ? String(fromUserIdRaw) : '';
+      const fromUserNickname = fromUser?.nickname ?? fromUser?.name ?? fromUser?.userId ?? '';
+      
+      // 요청 받은 사람 정보 추출 (to_user 객체에서 직접 추출)
+      const toUser = payload?.to_user ?? payload?.toUser ?? req?.to_user ?? req?.toUser ?? {};
+      const toUserIdRaw = toUser?.id ?? payload?.to_user_id ?? payload?.toUserId ?? req?.to_user_id ?? req?.toUserId;
+      const toUserId = toUserIdRaw ? String(toUserIdRaw) : '';
+      
       const event: FriendEventPayload = {
         type: 'friend:request:responded',
-        toUserId: (payload?.to_user_id ?? payload?.toUserId ?? req?.to_user_id ?? req?.toUserId ?? req?.to_user?.id) !== undefined
-          ? String(
-          payload?.to_user_id ??
-          payload?.toUserId ??
-          req?.to_user_id ??
-          req?.toUserId ??
-          req?.to_user?.id ??
-          ''
-          )
+        toUserId: toUserId || undefined,
+        friendUserId: (payload?.friend?.id ?? req?.friend?.id ?? toUser?.id) !== undefined
+          ? String(payload?.friend?.id ?? req?.friend?.id ?? toUser?.id)
           : undefined,
-        friendUserId: (payload?.friend?.id ?? req?.friend?.id) !== undefined
-          ? String(payload?.friend?.id ?? req?.friend?.id)
-          : undefined,
+        fromUserId: fromUserId || undefined,
+        fromUserNickname: fromUserNickname || undefined,
         requestId: String(
           payload?.request_id ??
           payload?.requestId ??
@@ -223,6 +228,17 @@ export async function initRealtime() {
         ),
         result: (isAccepted ? 'accepted' : 'rejected'),
       };
+      
+      console.log('[WebSocket] friend:request:responded event:', {
+        payload,
+        fromUser,
+        fromUserId,
+        fromUserNickname,
+        toUser,
+        toUserId,
+        event,
+      });
+      
       friendEventListeners.forEach((fn) => fn(event));
     });
   } catch (e) {

@@ -22,22 +22,49 @@ export function Navbar({ user, onLogout }: NavbarProps) {
     createdAt: string;
     read: boolean;
   }>>([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
+  // 로컬 스토리지에서 읽은 알림 ID 목록 불러오기
+  const getReadNotificationIds = (): Set<string> => {
+    try {
+      const stored = localStorage.getItem(`readNotifications_${user?.id}`);
+      if (stored) {
+        return new Set(JSON.parse(stored));
+      }
+    } catch {
+      // 무시
+    }
+    return new Set<string>();
+  };
+
+  // 로컬 스토리지에 읽은 알림 ID 저장
+  const saveReadNotificationIds = (ids: Set<string>) => {
+    try {
+      localStorage.setItem(`readNotifications_${user?.id}`, JSON.stringify(Array.from(ids)));
+    } catch {
+      // 무시
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
     // 초기 배지 동기화: 받은 친구 요청 목록을 읽어와 미읽음으로 표시
     (async () => {
       try {
+        const readIds = getReadNotificationIds();
         const incoming = await (api as any).getIncomingFriendRequests?.();
         if (Array.isArray(incoming)) {
-          const initial = incoming.map((r: any) => ({
-            id: `incoming_${r.id}`,
-            type: 'friend_request' as const,
-            title: '친구 요청이 도착했어요',
-            message: `보낸 사람 ID: ${r.fromUserId ?? ''}`,
-            createdAt: new Date().toISOString(),
-            read: false,
-          }));
+          const initial = incoming.map((r: any) => {
+            const notificationId = `incoming_${r.id}`;
+            return {
+              id: notificationId,
+              type: 'friend_request' as const,
+              title: '친구 요청이 도착했어요',
+              message: `보낸 사람 ID: ${r.fromUserId ?? ''}`,
+              createdAt: new Date().toISOString(),
+              read: readIds.has(notificationId), // 로컬 스토리지에서 읽음 상태 확인
+            };
+          });
           setNotifications((prev) => {
             // 중복 방지
             const prevIds = new Set(prev.map((n) => n.id));
@@ -52,42 +79,110 @@ export function Navbar({ user, onLogout }: NavbarProps) {
     // 소켓 연결(있으면)
     initRealtime?.();
     const unsubscribe = onFriendEvent?.((event) => {
+      const readIds = getReadNotificationIds();
+      
       if (event.type === 'friend:request:received') {
         // 자신에게 온 요청만 표시
         if (!user?.id || String(user.id) !== String((event as any).toUserId)) return;
+        const notificationId = `sock_${event.requestId}`;
         setNotifications(prev => [
           {
-            id: `sock_${event.requestId}`,
+            id: notificationId,
             type: 'friend_request',
             title: '친구 요청이 도착했어요',
             message: `${event.fromUserId} 님이 친구 요청을 보냈습니다.`,
             createdAt: new Date().toISOString(),
-            read: false,
+            read: readIds.has(notificationId), // 로컬 스토리지에서 읽음 상태 확인
           },
           ...prev,
         ]);
         toast.info('새 친구 요청이 도착했습니다');
       } else if (event.type === 'friend:request:responded') {
-        // 요청 보낸 사람에게만 결과 노출
-        // 서버가 'friend' (수락자)만 내려주는 경우가 많으므로
-        // friendUserId(=수락자)가 나와 같으면 숨기고, 그 외에는 표시
-        if (user?.id) {
-          const responderId = (event as any).friendUserId;
-          if (responderId && String(user.id) === String(responderId)) {
-            return; // 수락자 본인 → 결과 알림 숨김
-          }
+        console.log('[Navbar] friend:request:responded event handler called', { user: user?.id, event });
+        if (!user?.id) {
+          console.log('[Navbar] No user, returning early');
+          return;
         }
-        setNotifications(prev => [
-          {
-            id: `sock_${event.requestId}`,
-            type: 'system',
-            title: '친구 요청 처리 결과',
-            message: `요청이 ${event.result === 'accepted' ? '수락' : '거절'}되었습니다.`,
-            createdAt: new Date().toISOString(),
-            read: false,
-          },
-          ...prev,
-        ]);
+        
+        const responderId = event.friendUserId; // 수락/거절한 사람 (요청 받은 사람)
+        const toUserId = event.toUserId; // 요청 받은 사람 ID
+        const fromUserId = event.fromUserId; // 요청 보낸 사람 ID
+        const fromUserNickname = event.fromUserNickname || '알 수 없음'; // 요청 보낸 사람 닉네임
+        
+        console.log('[Navbar] friend:request:responded event received:', {
+          currentUserId: user.id,
+          fromUserId,
+          toUserId,
+          responderId,
+          fromUserNickname,
+          result: event.result,
+        });
+        
+        // 요청 받은 사람(수락/거절한 사람)에게 알림
+        if (toUserId && String(user.id) === String(toUserId)) {
+          console.log('[Navbar] Sending notification to request receiver (toUserId)');
+          const notificationId = `sock_responded_${event.requestId}`;
+          const message = event.result === 'accepted' 
+            ? `${fromUserNickname}님과 친구가 되었습니다!`
+            : `${fromUserNickname}님의 친구 추가를 거절하셨습니다.`;
+          
+          setNotifications(prev => [
+            {
+              id: notificationId,
+              type: 'system',
+              title: event.result === 'accepted' ? '친구 추가 완료' : '친구 요청 거절',
+              message: message,
+              createdAt: new Date().toISOString(),
+              read: readIds.has(notificationId),
+            },
+            ...prev,
+          ]);
+          
+          // 수락/거절한 사람은 여기서 처리 완료
+          return;
+        }
+        
+        // 요청 보낸 사람에게 결과 알림
+        // fromUserId가 현재 사용자와 같으면 (요청을 보낸 사람) 알림 표시
+        const currentUserIdStr = String(user.id);
+        const fromUserIdStr = fromUserId ? String(fromUserId) : '';
+        const toUserIdStr = toUserId ? String(toUserId) : '';
+        
+        console.log('[Navbar] Checking notification recipients:', {
+          currentUserId: currentUserIdStr,
+          fromUserId: fromUserIdStr,
+          toUserId: toUserIdStr,
+          fromUserIdMatch: fromUserIdStr && currentUserIdStr === fromUserIdStr,
+          toUserIdMatch: toUserIdStr && currentUserIdStr === toUserIdStr,
+        });
+        
+        if (fromUserIdStr && currentUserIdStr === fromUserIdStr) {
+          console.log('[Navbar] Sending notification to request sender (fromUserId)');
+          const notificationId = `sock_${event.requestId}`;
+          const message = `요청이 ${event.result === 'accepted' ? '수락' : '거절'}되었습니다.`;
+          
+          setNotifications(prev => [
+            {
+              id: notificationId,
+              type: 'system',
+              title: '친구 요청 처리 결과',
+              message: message,
+              createdAt: new Date().toISOString(),
+              read: readIds.has(notificationId),
+            },
+            ...prev,
+          ]);
+          
+          toast.info(message);
+        } else if (!fromUserIdStr) {
+          console.log('[Navbar] fromUserId is empty or undefined');
+        } else {
+          console.log('[Navbar] Not sending notification - fromUserId mismatch:', {
+            fromUserId: fromUserIdStr,
+            currentUserId: currentUserIdStr,
+            match: currentUserIdStr === fromUserIdStr,
+          });
+        }
       }
     });
     return () => {
@@ -99,7 +194,14 @@ export function Navbar({ user, onLogout }: NavbarProps) {
     try {
       const data = await api.getNotifications?.();
       if (Array.isArray(data)) {
-        setNotifications(data);
+        // 로컬 스토리지에서 읽은 알림 ID 목록 불러오기
+        const readIds = getReadNotificationIds();
+        // 서버 데이터와 로컬 스토리지의 읽음 상태를 병합
+        const merged = data.map(n => ({
+          ...n,
+          read: n.read || readIds.has(n.id), // 서버에서 읽음이거나 로컬 스토리지에 있으면 읽음
+        }));
+        setNotifications(merged);
       } else {
         setNotifications([]);
       }
@@ -119,13 +221,50 @@ export function Navbar({ user, onLogout }: NavbarProps) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleNotificationClick = async (notification: any) => {
+    // 알림을 읽음으로 표시
     if (!notification.read) {
+      // 서버에 읽음 상태 저장
+      try {
+        await api.markNotificationAsRead?.(notification.id);
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
+      
+      // 로컬 스토리지에 읽은 알림 ID 저장
+      const readIds = getReadNotificationIds();
+      readIds.add(notification.id);
+      saveReadNotificationIds(readIds);
+      
+      // 로컬 state 업데이트
       setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+    }
+    
+    // 친구 요청 관련 알림인 경우 친구 목록 페이지로 이동
+    if (notification.type === 'friend_request' || 
+        (notification.type === 'system' && 
+         (notification.message?.includes('수락') || notification.message?.includes('거절')))) {
+      // 알림창 닫기
+      setNotificationOpen(false);
+      // 페이지 이동
+      if (user?.id) {
+        navigate(`/friends/${user.id}`);
+      }
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    // 서버 호출 없이 로컬 상태만 업데이트
+    // 서버에 모든 알림 읽음 상태 저장
+    try {
+      await api.markAllNotificationsAsRead?.();
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+    
+    // 로컬 스토리지에 모든 알림 ID 저장
+    const readIds = new Set(notifications.map(n => n.id));
+    saveReadNotificationIds(readIds);
+    
+    // 로컬 state 업데이트
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     toast.success('모든 알림을 읽음으로 표시했습니다');
   };
@@ -161,7 +300,7 @@ export function Navbar({ user, onLogout }: NavbarProps) {
               </Button>
             </Link>
 
-            <Popover>
+            <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
