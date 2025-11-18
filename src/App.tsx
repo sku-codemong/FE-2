@@ -22,12 +22,19 @@ function App() {
   useEffect(() => {
     const initializeUser = async () => {
       try {
+        console.log('[App] Initializing user...');
         const profile = await api.getMe();
         console.log('[App] Initial user profile:', profile);
         console.log('[App] profileImageUrl:', profile.profileImageUrl);
         setUser(profile);
         localStorage.setItem('user', JSON.stringify(profile));
-      } catch (error) {
+      } catch (error: any) {
+        console.error('[App] Error initializing user:', error);
+        console.error('[App] Error details:', {
+          message: error?.message,
+          stack: error?.stack,
+          name: error?.name,
+        });
         clearAuthTokens();
         localStorage.removeItem('user');
         setUser(null);

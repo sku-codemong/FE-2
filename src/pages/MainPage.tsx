@@ -39,14 +39,18 @@ export function MainPage({ userId }: MainPageProps) {
 
   const loadData = async () => {
     try {
+      console.log('[MainPage] Loading data...');
       const subjectsData = await api.getSubjects(true); // includeArchived=true로 모든 과목 가져오기
+      console.log('[MainPage] Subjects loaded:', subjectsData.length);
       setAllSubjects(subjectsData);
 
       // 오늘 학습 시간 계산 (초 단위로 합산)
       const today = formatLocalYYYYMMDD(new Date());
+      console.log('[MainPage] Loading sessions for:', today);
       const sessions = await api.getSessions({
         date: today
       });
+      console.log('[MainPage] Sessions loaded:', sessions.length);
 
       // 각 과목별로 초 단위로 합산 (초 단위 표시를 위해)
       const progressSecondsMap = new Map<string, number>();
@@ -76,8 +80,14 @@ export function MainPage({ userId }: MainPageProps) {
 
       setDailyProgress(progressMap);
       setDailyProgressSeconds(progressSecondsMap); // 초 단위 데이터 저장
-    } catch (error) {
-      toast.error('데이터를 불러오는데 실패했습니다');
+    } catch (error: any) {
+      console.error('[MainPage] Error loading data:', error);
+      console.error('[MainPage] Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+      });
+      toast.error(`데이터를 불러오는데 실패했습니다: ${error?.message || '알 수 없는 오류'}`);
     } finally {
       setLoading(false);
     }

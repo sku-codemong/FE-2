@@ -256,6 +256,13 @@ export function onFriendEvent(listener: (event: FriendEventPayload) => void) {
 // ========== Configuration ==========
 const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
 
+// 디버깅: API_BASE_URL 확인
+if (typeof window !== 'undefined') {
+  console.log('[API] API_BASE_URL:', API_BASE_URL);
+  console.log('[API] import.meta.env:', import.meta.env);
+  console.log('[API] VITE_API_BASE_URL:', import.meta.env?.VITE_API_BASE_URL);
+}
+
 const ACCESS_TOKEN_KEY = 'codemong.accessToken';
 const REFRESH_TOKEN_KEY = 'codemong.refreshToken';
 const REFRESH_ENDPOINT = '/api/auth/refresh';
@@ -732,6 +739,16 @@ async function apiRequest<T>(
   } = options;
 
   const url = `${API_BASE_URL}${endpoint}`;
+  
+  // 디버깅: API 호출 정보 로깅
+  console.log('[API Request]', {
+    endpoint,
+    url,
+    API_BASE_URL,
+    hasToken: !skipAuth && !!getStoredAccessToken(),
+    userAgent: navigator.userAgent,
+  });
+
   const requestHeaders = new Headers(headers ?? {});
 
   const shouldAttachContentType =
@@ -749,13 +766,26 @@ async function apiRequest<T>(
     }
   }
 
-  const response = await fetch(url, {
-    ...rest,
-    body,
-    credentials: credentials ?? 'include',
-    headers: requestHeaders,
-    cache: rest.cache ?? 'no-store',
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...rest,
+      body,
+      credentials: credentials ?? 'include',
+      headers: requestHeaders,
+      cache: rest.cache ?? 'no-store',
+    });
+  } catch (fetchError: any) {
+    // 네트워크 에러 (CORS, 연결 실패 등)
+    console.error('[API Request] Fetch error:', {
+      endpoint,
+      url,
+      error: fetchError.message,
+      name: fetchError.name,
+      stack: fetchError.stack,
+    });
+    throw new Error(`네트워크 오류: ${fetchError.message || '서버에 연결할 수 없습니다'}`);
+  }
 
   if (response.status === 401 && !skipAuth && retry) {
     const refreshed = await requestTokenRefresh();
@@ -778,6 +808,16 @@ async function apiRequest<T>(
     const errorMessage =
       (payload && typeof payload === 'object' && 'message' in payload && (payload as any).message) ||
       `HTTP Error: ${response.status}`;
+    
+    console.error('[API Request] Error response:', {
+      endpoint,
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      payload,
+      errorMessage,
+    });
+    
     throw new Error(errorMessage as string);
   }
 
