@@ -411,45 +411,45 @@ export function SubjectDetailPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-[#f5f3ff] via-[#faf5ff] to-[#fff] py-6 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#f5f3ff] via-[#faf5ff] to-[#fff] py-4 sm:py-6 px-3 sm:px-4">
       <div className="max-w-[848px] mx-auto">
         {/* Back Button */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-3 h-[36px] px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-6"
+          className="flex items-center gap-2 sm:gap-3 h-[36px] px-2 sm:px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-4 sm:mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-[14px] text-neutral-950">돌아가기</span>
+          <span className="text-[12px] sm:text-[14px] text-neutral-950">돌아가기</span>
         </button>
 
         {/* Main Card */}
-        <div className="bg-white rounded-[16px] shadow-[0px_20px_25px_-5px_rgba(0,0,0,0.1),0px_8px_10px_-6px_rgba(0,0,0,0.1)] p-[48px]">
+        <div className="bg-white rounded-[16px] shadow-[0px_20px_25px_-5px_rgba(0,0,0,0.1),0px_8px_10px_-6px_rgba(0,0,0,0.1)] p-4 sm:p-[48px]">
           {/* Header with Icon */}
-          <div className="flex flex-col items-center mb-[48px]">
+          <div className="flex flex-col items-center mb-6 sm:mb-[48px]">
             <div 
-              className="w-[96px] h-[96px] rounded-full flex items-center justify-center mb-[16px]"
+              className="w-16 h-16 sm:w-[96px] sm:h-[96px] rounded-full flex items-center justify-center mb-3 sm:mb-[16px]"
               style={{
                 background: `linear-gradient(to bottom right, ${lightenColorHex(subject.color, 30)}, ${subject.color})`
               }}
             >
-              <Clock className="w-[48px] h-[48px] text-white" strokeWidth={2.67} />
+              <Clock className="w-8 h-8 sm:w-[48px] sm:h-[48px] text-white" strokeWidth={2.67} />
             </div>
-            <h1 className="text-[16px] text-neutral-950 mb-[8px]">{subject.name}</h1>
-            <p className="text-[16px] text-[#4a5565]">학습 타이머</p>
+            <h1 className="text-[14px] sm:text-[16px] text-neutral-950 mb-1 sm:mb-[8px] break-words text-center">{subject.name}</h1>
+            <p className="text-[12px] sm:text-[16px] text-[#4a5565]">학습 타이머</p>
           </div>
 
           {/* Timer Section */}
-          <div className="flex flex-col items-center mb-[48px]">
+          <div className="flex flex-col items-center mb-6 sm:mb-[48px]">
             <div 
-              className="w-full rounded-[24px] px-[48px] py-[32px] mb-[16px]"
+              className="w-full rounded-[24px] px-4 sm:px-[48px] py-6 sm:py-[32px] mb-3 sm:mb-[16px]"
               style={{
                 background: `linear-gradient(to bottom right, ${lightenColorHex(subject.color, 40)}, ${lightenColorHex(subject.color, 20)})`
               }}
             >
-              <p className="text-[96px] leading-[96px] text-center text-neutral-950 tracking-tight">
+              <p className="text-[48px] sm:text-[96px] leading-[48px] sm:leading-[96px] text-center text-neutral-950 tracking-tight">
                 {formatTime(elapsedSeconds)}
               </p>
-              <p className="text-[16px] text-[#4a5565] text-center mt-[16px]">
+              <p className="text-[12px] sm:text-[16px] text-[#4a5565] text-center mt-2 sm:mt-[16px]">
                 {!activeSession ? '시작 대기 중' : isPaused ? '일시정지됨' : '학습 중...'}
               </p>
             </div>
@@ -461,10 +461,10 @@ export function SubjectDetailPage() {
                 style={{
                   backgroundColor: subject.color,
                 }}
-                className="hover:opacity-90 text-white rounded-[8px] h-[40px] px-[16px] flex items-center gap-[12px] transition-opacity"
+                className="hover:opacity-90 text-white rounded-[8px] h-[40px] px-4 sm:px-[16px] flex items-center gap-2 sm:gap-[12px] transition-opacity w-full sm:w-auto justify-center"
               >
-                <Play className="w-[20px] h-[20px]" strokeWidth={1.67} fill="white" />
-                <span className="text-[14px]">시작</span>
+                <Play className="w-5 h-5 sm:w-[20px] sm:h-[20px]" strokeWidth={1.67} fill="white" />
+                <span className="text-[13px] sm:text-[14px]">시작</span>
               </button>
             )}
             
@@ -472,7 +472,7 @@ export function SubjectDetailPage() {
             {activeSession && (
               <button
                 onClick={handleStop}
-                className="bg-[#ef4444] hover:bg-[#dc2626] text-white rounded-[8px] h-[40px] px-[16px] text-[14px] transition-colors"
+                className="bg-[#ef4444] hover:bg-[#dc2626] text-white rounded-[8px] h-[40px] px-4 sm:px-[16px] text-[13px] sm:text-[14px] transition-colors w-full sm:w-auto"
               >
                 종료
               </button>
@@ -481,26 +481,26 @@ export function SubjectDetailPage() {
 
           {/* Assignments Section */}
           {subject.hasExtraWork && subject.assignments && subject.assignments.length > 0 && (
-            <div className="border-t border-gray-200 pt-[25px] mb-[24px]">
-              <h2 className="text-[16px] text-neutral-950 mb-[12px]">등록된 과제</h2>
-              <div className="space-y-[8px]">
+            <div className="border-t border-gray-200 pt-4 sm:pt-[25px] mb-4 sm:mb-[24px]">
+              <h2 className="text-[14px] sm:text-[16px] text-neutral-950 mb-2 sm:mb-[12px]">등록된 과제</h2>
+              <div className="space-y-2 sm:space-y-[8px]">
                 {subject.assignments.map((assignment) => (
                   <div 
                     key={assignment.id}
-                    className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-[10px] px-[16px] py-[12px] flex items-center justify-between gap-[12px]"
+                    className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-[10px] px-3 sm:px-[16px] py-2 sm:py-[12px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-[12px]"
                   >
-                    <div className="flex items-center gap-[12px] flex-1 min-w-0">
+                    <div className="flex items-center gap-2 sm:gap-[12px] flex-1 min-w-0">
                       <div 
-                        className="w-[8px] h-[8px] rounded-full shrink-0"
+                        className="w-[6px] h-[6px] sm:w-[8px] sm:h-[8px] rounded-full shrink-0"
                         style={{ backgroundColor: subject.color }}
                       />
-                      <span className="text-[14px] text-neutral-950 truncate">{assignment.title}</span>
+                      <span className="text-[12px] sm:text-[14px] text-neutral-950 truncate">{assignment.title}</span>
                     </div>
-                    <div className="flex items-center gap-[8px] shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-[8px] shrink-0 flex-wrap">
                       {assignment.estimatedMin && (
-                        <div className="flex items-center gap-[6px]">
-                          <Clock className="w-[14px] h-[14px] text-[#6a7282]" />
-                          <span className="text-[12px] text-[#6a7282] whitespace-nowrap">
+                        <div className="flex items-center gap-1 sm:gap-[6px]">
+                          <Clock className="w-3 h-3 sm:w-[14px] sm:h-[14px] text-[#6a7282]" />
+                          <span className="text-[10px] sm:text-[12px] text-[#6a7282] whitespace-nowrap">
                             {Math.floor(assignment.estimatedMin / 60) > 0 && `${Math.floor(assignment.estimatedMin / 60)}h `}
                             {assignment.estimatedMin % 60}m
                           </span>
@@ -509,7 +509,7 @@ export function SubjectDetailPage() {
                       <button
                         type="button"
                         onClick={() => handleAssignmentStatusChange(assignment.id, getNextStatus(assignment.status))}
-                        className={`px-[12px] py-[4px] rounded-[6px] text-[12px] transition-colors ${getStatusColor(assignment.status)} hover:opacity-80`}
+                        className={`px-2 sm:px-[12px] py-1 sm:py-[4px] rounded-[6px] text-[10px] sm:text-[12px] transition-colors ${getStatusColor(assignment.status)} hover:opacity-80`}
                       >
                         {getStatusText(assignment.status)}
                       </button>
@@ -518,12 +518,12 @@ export function SubjectDetailPage() {
                         onClick={() => handleEditAssignment(assignment)}
                         className="text-blue-500 hover:text-blue-700 transition-colors"
                       >
-                        <Edit className="w-[14px] h-[14px]" />
+                        <Edit className="w-3 h-3 sm:w-[14px] sm:h-[14px]" />
                       </button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <button className="text-red-500 hover:text-red-700 transition-colors">
-                            <Trash2 className="w-[14px] h-[14px]" />
+                            <Trash2 className="w-3 h-3 sm:w-[14px] sm:h-[14px]" />
                           </button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -552,33 +552,33 @@ export function SubjectDetailPage() {
           )}
 
           {/* Note Section */}
-          <div className="border-t border-gray-200 pt-[25px] mb-[24px]">
-            <label className="block text-[16px] text-neutral-950 mb-[8px]">학습 노트</label>
+          <div className="border-t border-gray-200 pt-4 sm:pt-[25px] mb-4 sm:mb-[24px]">
+            <label className="block text-[14px] sm:text-[16px] text-neutral-950 mb-2 sm:mb-[8px]">학습 노트</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="오늘 학습한 내용을 기록하세요..."
-              className="w-full h-[128px] bg-white border border-gray-200 rounded-[10px] px-[16px] py-[12px] text-[16px] text-neutral-950 placeholder:text-[rgba(10,10,10,0.5)] resize-none focus:outline-none focus:ring-2 focus:ring-[#9810fa]"
+              className="w-full h-[100px] sm:h-[128px] bg-white border border-gray-200 rounded-[10px] px-3 sm:px-[16px] py-2 sm:py-[12px] text-[13px] sm:text-[16px] text-neutral-950 placeholder:text-[rgba(10,10,10,0.5)] resize-none focus:outline-none focus:ring-2 focus:ring-[#9810fa]"
             />
           </div>
 
           {/* Stats Section */}
-          <div className="grid grid-cols-3 gap-[16px]">
-            <div className="bg-purple-50 rounded-[14px] p-[16px]">
-              <p className="text-[16px] text-[#6a7282] text-center mb-[4px]">오늘 학습 시간</p>
-              <p className="text-[16px] text-neutral-950 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-[16px]">
+            <div className="bg-purple-50 rounded-[14px] p-3 sm:p-[16px]">
+              <p className="text-[11px] sm:text-[16px] text-[#6a7282] text-center mb-1 sm:mb-[4px]">오늘 학습 시간</p>
+              <p className="text-[12px] sm:text-[16px] text-neutral-950 text-center break-words">
                 {Math.floor(todayMinutes / 60) > 0 ? `${Math.floor(todayMinutes / 60)}시간 ` : ''}{todayMinutes % 60}분 {todaySeconds}초
               </p>
             </div>
-            <div className="bg-blue-50 rounded-[14px] p-[16px]">
-              <p className="text-[16px] text-[#6a7282] text-center mb-[4px]">이번 주 누적</p>
-              <p className="text-[16px] text-neutral-950 text-center">
+            <div className="bg-blue-50 rounded-[14px] p-3 sm:p-[16px]">
+              <p className="text-[11px] sm:text-[16px] text-[#6a7282] text-center mb-1 sm:mb-[4px]">이번 주 누적</p>
+              <p className="text-[12px] sm:text-[16px] text-neutral-950 text-center break-words">
                 {Math.floor(weekMinutes / 60) > 0 ? `${Math.floor(weekMinutes / 60)}시간 ` : ''}{weekMinutes % 60}분 {weekSeconds}초
               </p>
             </div>
-            <div className="bg-emerald-50 rounded-[14px] p-[16px]">
-              <p className="text-[16px] text-[#6a7282] text-center mb-[4px]">목표까지</p>
-              <p className="text-[16px] text-neutral-950 text-center">
+            <div className="bg-emerald-50 rounded-[14px] p-3 sm:p-[16px]">
+              <p className="text-[11px] sm:text-[16px] text-[#6a7282] text-center mb-1 sm:mb-[4px]">목표까지</p>
+              <p className="text-[12px] sm:text-[16px] text-neutral-950 text-center">
                 {Math.floor(remaining / 60)}시간 {remaining % 60}분
               </p>
             </div>

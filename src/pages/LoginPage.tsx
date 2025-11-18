@@ -68,8 +68,14 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         toast.success('로그인 성공!');
         navigate('/');
       }
-    } catch (error) {
-      toast.error('로그인에 실패했습니다');
+    } catch (error: any) {
+      // 토큰 저장 실패인지 확인
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('인증 토큰을 저장할 수 없습니다')) {
+        toast.error('로그인은 성공했지만 토큰 저장에 실패했습니다. 브라우저 설정을 확인해주세요.');
+      } else {
+        toast.error(errorMessage || '로그인에 실패했습니다');
+      }
     } finally {
       setLoading(false);
     }

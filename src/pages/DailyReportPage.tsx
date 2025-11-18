@@ -105,15 +105,15 @@ export function DailyReportPage() {
     });
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-[848px] mx-auto">
         {/* Back Button */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-3 h-[36px] px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-6"
+          className="flex items-center gap-2 sm:gap-3 h-[36px] px-2 sm:px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-4 sm:mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-[14px] text-neutral-950">돌아가기</span>
+          <span className="text-[12px] sm:text-[14px] text-neutral-950">돌아가기</span>
         </button>
 
         {loading ? (
@@ -123,16 +123,16 @@ export function DailyReportPage() {
         ) : (
           <>
             {/* Header Card */}
-            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-[32px] mb-[24px]">
-              <div className="flex items-center justify-between mb-[24px]">
-                <div>
-                  <h1 className="text-[24px] text-neutral-950 mb-[8px]">일일 학습 리포트</h1>
-                  <p className="text-[16px] text-[#4a5565]">{formatDate(selectedDate)}</p>
+            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-4 sm:p-[32px] mb-4 sm:mb-[24px]">
+              <div className="flex items-start sm:items-center justify-between mb-4 sm:mb-[24px] gap-3">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-[18px] sm:text-[24px] text-neutral-950 mb-1 sm:mb-[8px]">일일 학습 리포트</h1>
+                  <p className="text-[12px] sm:text-[16px] text-[#4a5565] break-words">{formatDate(selectedDate)}</p>
                 </div>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="cursor-pointer hover:opacity-70 transition-opacity">
-                      <CalendarIcon className="w-[32px] h-[32px] text-[#9810fa]" strokeWidth={2.67} />
+                    <button className="cursor-pointer hover:opacity-70 transition-opacity flex-shrink-0">
+                      <CalendarIcon className="w-6 h-6 sm:w-[32px] sm:h-[32px] text-[#9810fa]" strokeWidth={2.67} />
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-white border border-gray-200 shadow-lg" align="end">
@@ -155,47 +155,47 @@ export function DailyReportPage() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-[16px]">
-                <div className="bg-purple-50 rounded-[14px] p-[16px]">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <Clock className="w-[20px] h-[20px] text-[#9810fa]" strokeWidth={1.67} />
-                    <span className="text-[16px] text-[#4a5565]">총 학습 시간</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-[16px]">
+                <div className="bg-purple-50 rounded-[14px] p-3 sm:p-[16px]">
+                  <div className="flex items-center gap-1 sm:gap-[8px] mb-1 sm:mb-[8px]">
+                    <Clock className="w-4 h-4 sm:w-[20px] sm:h-[20px] text-[#9810fa]" strokeWidth={1.67} />
+                    <span className="text-[11px] sm:text-[16px] text-[#4a5565]">총 학습 시간</span>
                   </div>
-                  <p className="text-[16px] text-neutral-950">
+                  <p className="text-[12px] sm:text-[16px] text-neutral-950 break-words">
                     {totalHours > 0 ? `${totalHours}시간 ` : ''}{totalMins}분 {totalSecs}초
                   </p>
                 </div>
 
-                <div className="bg-blue-50 rounded-[14px] p-[16px]">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <List className="w-[20px] h-[20px] text-[#155dfc]" strokeWidth={1.67} />
-                    <span className="text-[16px] text-[#4a5565]">학습 세션</span>
+                <div className="bg-blue-50 rounded-[14px] p-3 sm:p-[16px]">
+                  <div className="flex items-center gap-1 sm:gap-[8px] mb-1 sm:mb-[8px]">
+                    <List className="w-4 h-4 sm:w-[20px] sm:h-[20px] text-[#155dfc]" strokeWidth={1.67} />
+                    <span className="text-[11px] sm:text-[16px] text-[#4a5565]">학습 세션</span>
                   </div>
-                  <p className="text-[16px] text-neutral-950">{sessionCount}개</p>
+                  <p className="text-[12px] sm:text-[16px] text-neutral-950">{sessionCount}개</p>
                 </div>
 
-                <div className="bg-emerald-50 rounded-[14px] p-[16px]">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <BookOpen className="w-[20px] h-[20px] text-[#009966]" strokeWidth={1.67} />
-                    <span className="text-[16px] text-[#4a5565]">과목 수</span>
+                <div className="bg-emerald-50 rounded-[14px] p-3 sm:p-[16px]">
+                  <div className="flex items-center gap-1 sm:gap-[8px] mb-1 sm:mb-[8px]">
+                    <BookOpen className="w-4 h-4 sm:w-[20px] sm:h-[20px] text-[#009966]" strokeWidth={1.67} />
+                    <span className="text-[11px] sm:text-[16px] text-[#4a5565]">과목 수</span>
                   </div>
-                  <p className="text-[16px] text-neutral-950">{subjectCount}과목</p>
+                  <p className="text-[12px] sm:text-[16px] text-neutral-950">{subjectCount}과목</p>
                 </div>
               </div>
             </div>
 
             {/* Sessions Card */}
-            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-[32px]">
-              <div className="flex items-center justify-between mb-[24px]">
-                <h2 className="text-[20px] text-neutral-950">학습 세션 기록</h2>
+            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-4 sm:p-[32px]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-[24px]">
+                <h2 className="text-[16px] sm:text-[20px] text-neutral-950">학습 세션 기록</h2>
                 
                 {/* 필터 및 정렬 */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                   {/* 정렬 선택 */}
-                  <div className="flex items-center gap-2 bg-gray-100 rounded-[8px] p-1">
+                  <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 rounded-[8px] p-1">
                     <button
                       onClick={() => setSortOrder('newest')}
-                      className={`px-3 py-1.5 text-[14px] rounded-[6px] transition-colors ${
+                      className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[14px] rounded-[6px] transition-colors ${
                         sortOrder === 'newest'
                           ? 'bg-white text-neutral-950 shadow-sm'
                           : 'text-[#6a7282] hover:text-neutral-950'
@@ -205,7 +205,7 @@ export function DailyReportPage() {
                     </button>
                     <button
                       onClick={() => setSortOrder('oldest')}
-                      className={`px-3 py-1.5 text-[14px] rounded-[6px] transition-colors ${
+                      className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[14px] rounded-[6px] transition-colors ${
                         sortOrder === 'oldest'
                           ? 'bg-white text-neutral-950 shadow-sm'
                           : 'text-[#6a7282] hover:text-neutral-950'
@@ -219,7 +219,7 @@ export function DailyReportPage() {
                   <select
                     value={selectedSubjectId}
                     onChange={(e) => setSelectedSubjectId(e.target.value)}
-                    className="px-3 py-1.5 text-[14px] border border-gray-300 rounded-[8px] bg-white text-neutral-950 focus:outline-none focus:ring-2 focus:ring-[#9810fa] focus:border-transparent"
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-[14px] border border-gray-300 rounded-[8px] bg-white text-neutral-950 focus:outline-none focus:ring-2 focus:ring-[#9810fa] focus:border-transparent"
                   >
                     <option value="all">전체 과목</option>
                     {subjects.map(subject => (
@@ -279,43 +279,43 @@ export function DailyReportPage() {
                       const minutes = Math.floor(durationSec / 60);
                       
                       return (
-                        <div key={session.id || index} className="border border-gray-200 rounded-[14px] p-[17px]">
-                          <div className="flex items-start gap-[16px]">
+                        <div key={session.id || index} className="border border-gray-200 rounded-[14px] p-3 sm:p-[17px]">
+                          <div className="flex items-start gap-3 sm:gap-[16px]">
                             {/* Color Icon */}
                             <div
-                              className="w-[48px] h-[48px] rounded-full flex-shrink-0"
+                              className="w-10 h-10 sm:w-[48px] sm:h-[48px] rounded-full flex-shrink-0"
                               style={{ backgroundColor: subjectColor }}
                             />
                             
                             {/* Content */}
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between mb-[8px]">
-                                <div>
-                                  <h3 className="text-[18px] text-neutral-950 mb-[3px]">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-[8px]">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-[14px] sm:text-[18px] text-neutral-950 mb-1 sm:mb-[3px] break-words">
                                     {subjectName}
                                   </h3>
-                                  <p className="text-[16px] text-[#6a7282]">
+                                  <p className="text-[12px] sm:text-[16px] text-[#6a7282]">
                                     {startTime} - {endTime}
                                   </p>
                                 </div>
-                                <div className="text-right">
-                                  <p className="text-[16px] text-neutral-950">
+                                <div className="text-left sm:text-right">
+                                  <p className="text-[12px] sm:text-[16px] text-neutral-950 whitespace-nowrap">
                                     {hours > 0 ? `${hours}시간 ` : ''}{mins}분 {secs}초
                                   </p>
                                 </div>
                               </div>
                               
                               {/* Note */}
-                              <div className="bg-gray-50 rounded-[10px] p-[12px]">
-                                <p className="text-[16px] text-[#4a5565]">
+                              <div className="bg-gray-50 rounded-[10px] p-2 sm:p-[12px]">
+                                <p className="text-[12px] sm:text-[16px] text-[#4a5565]">
                                   📝 학습 내용 기록
                                 </p>
                                 {session.note ? (
-                                  <p className="text-[14px] text-neutral-950 mt-[8px] whitespace-pre-wrap">
+                                  <p className="text-[11px] sm:text-[14px] text-neutral-950 mt-1 sm:mt-[8px] whitespace-pre-wrap break-words">
                                     {session.note}
                                   </p>
                                 ) : (
-                                  <p className="text-[14px] text-[#9ca3af] mt-[8px]">
+                                  <p className="text-[11px] sm:text-[14px] text-[#9ca3af] mt-1 sm:mt-[8px]">
                                     기록된 내용이 없습니다
                                   </p>
                                 )}
