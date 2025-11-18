@@ -169,6 +169,19 @@ export function WeeklyReportPage() {
   });
 
   // 세션 데이터에서 과목별 초 단위로 계산하여 pieChartData 생성
+  const formatSecondsToHMS = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    const parts: string[] = [];
+    if (hours > 0) {
+      parts.push(`${hours}시간`);
+    }
+    parts.push(`${mins}분`);
+    parts.push(`${secs}초`);
+    return parts.join(' ');
+  };
+
   const pieChartData = report?.subjects
     .map(s => {
       // 세션 데이터에서 정확한 초 단위 계산
@@ -414,7 +427,12 @@ export function WeeklyReportPage() {
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <Tooltip />
+                          <Tooltip
+                            formatter={(value, name) => [
+                              formatSecondsToHMS(Number(value)),
+                              name as string,
+                            ]}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>

@@ -234,21 +234,21 @@ export function SubjectEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-[640px] mx-auto">
         {/* Back Button */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-3 h-[36px] px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-6"
+          className="flex items-center gap-2 sm:gap-3 h-[36px] px-2 sm:px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-4 sm:mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-[14px] text-neutral-950">돌아가기</span>
+          <span className="text-[12px] sm:text-[14px] text-neutral-950">돌아가기</span>
         </button>
 
         {/* Card */}
-        <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[33px]">
+        <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-4 sm:p-[33px]">
           {/* Header with Delete Button */}
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-12">
             <h1 className="text-[16px] text-neutral-950">과목 수정</h1>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -351,7 +351,7 @@ export function SubjectEditPage() {
 
             {/* 과제 목록 */}
             {formData.hasExtraWork && (
-              <div className="bg-purple-50 rounded-[10px] p-4 space-y-3">
+              <div className="bg-purple-50 rounded-[10px] p-3 sm:p-4 space-y-3">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-[14px] text-neutral-950">과제 목록</label>
                   <button
@@ -366,7 +366,7 @@ export function SubjectEditPage() {
                 
                 {formData.assignments.map((assignment) => (
                   <div key={assignment.id} className="bg-white rounded-[8px] p-3 space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <input
                         type="text"
                         placeholder="과제 이름"
@@ -390,14 +390,25 @@ export function SubjectEditPage() {
                         className="w-full bg-[#f3f3f5] rounded-[8px] h-[60px] px-3 py-2 text-[14px] text-neutral-950 placeholder:text-[#717182] border-0 focus:outline-none focus:ring-2 focus:ring-[#9810fa] resize-none"
                       />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <label className="text-[12px] text-[#6a7282] whitespace-nowrap">예상 소요시간:</label>
                       <input
                         type="number"
                         min="10"
                         step="10"
-                        value={assignment.estimatedMin || 0}
-                        onChange={(e) => updateAssignment(assignment.id, 'estimatedMin', parseInt(e.target.value) || 0)}
+                        inputMode="numeric"
+                        value={
+                          assignment.estimatedMin === undefined || assignment.estimatedMin === null
+                            ? ''
+                            : assignment.estimatedMin
+                        }
+                        onChange={(e) =>
+                          updateAssignment(
+                            assignment.id,
+                            'estimatedMin',
+                            e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0
+                          )
+                        }
                         className="bg-[#f3f3f5] rounded-[8px] h-[32px] px-3 text-[14px] text-neutral-950 border-0 focus:outline-none focus:ring-2 focus:ring-[#9810fa] w-[100px]"
                       />
                       <span className="text-[12px] text-[#6a7282]">분</span>
@@ -437,7 +448,7 @@ export function SubjectEditPage() {
               <Label htmlFor="color">과목 색상</Label>
               <div className="space-y-3 mt-2">
                 {/* 기본 색상 (파란색, 초록색, 노란색) */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {defaultColors.map((color) => (
                     <button
                       key={color.value}

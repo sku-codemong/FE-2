@@ -228,51 +228,9 @@ export function MainPage({ userId }: MainPageProps) {
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-[542px] mx-auto">
-        {/* 에러 표시 (모바일 디버깅용) */}
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <span className="text-red-600 text-lg">⚠️</span>
-              <div className="flex-1">
-                <p className="text-red-800 text-sm font-medium mb-1">오류 발생</p>
-                <p className="text-red-700 text-xs break-words">{error}</p>
-                {apiBaseUrl && (
-                  <p className="text-red-600 text-xs mt-2">
-                    API URL: {apiBaseUrl || '(설정되지 않음)'}
-                  </p>
-                )}
-                {error.includes('Missing access token') && (
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-yellow-800 text-xs font-medium mb-1">해결 방법:</p>
-                    <p className="text-yellow-700 text-xs">1. 로그아웃 후 다시 로그인해주세요</p>
-                    <p className="text-yellow-700 text-xs">2. 브라우저 캐시를 삭제하고 다시 시도해주세요</p>
-                    <button
-                      onClick={() => {
-                        window.location.href = '/login';
-                      }}
-                      className="mt-2 text-xs text-yellow-800 underline hover:text-yellow-900"
-                    >
-                      로그인 페이지로 이동
-                    </button>
-                  </div>
-                )}
-                <button
-                  onClick={() => {
-                    setError(null);
-                    loadData();
-                  }}
-                  className="mt-2 text-xs text-red-600 underline hover:text-red-800"
-                >
-                  다시 시도
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
         {/* Header */}
         <div className="mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
             <div className="flex-1">
               <h1 className="text-[20px] sm:text-[24px] text-neutral-950 mb-2">내 학습 현황</h1>
               <p className="text-[14px] sm:text-[16px] text-[#4a5565]">
@@ -289,13 +247,13 @@ export function MainPage({ userId }: MainPageProps) {
                 </>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-end w-full sm:w-auto">
               <button
                 onClick={() => setShowAllocationDialog(true)}
                 className="bg-white border-2 border-[#9810fa] text-[#9810fa] hover:bg-purple-50 rounded-[8px] px-3 sm:px-4 h-[36px] text-[12px] sm:text-[14px] flex items-center gap-1 sm:gap-2 transition-colors"
               >
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">일일 분배</span>
+                <span className="hidden sm:inline">시간 분배</span>
                 <span className="sm:hidden">분배</span>
               </button>
               <Link to={`/subject/create/${userId}`}>
@@ -436,8 +394,18 @@ export function MainPage({ userId }: MainPageProps) {
                   type="number"
                   min="30"
                   step="30"
-                  value={availableMinutes}
-                  onChange={(e) => setAvailableMinutes(parseInt(e.target.value) || 0)}
+                  value={availableMinutes === 0 ? '' : availableMinutes}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      setAvailableMinutes(0);
+                      return;
+                    }
+                    const parsed = parseInt(value, 10);
+                    if (!Number.isNaN(parsed)) {
+                      setAvailableMinutes(parsed);
+                    }
+                  }}
                   className="flex-1 bg-[#f3f3f5] rounded-[8px] h-[40px] px-3 text-[16px] text-neutral-950 border-0 focus:outline-none focus:ring-2 focus:ring-[#9810fa]"
                 />
                 <span className="text-[14px] text-[#6a7282] whitespace-nowrap">

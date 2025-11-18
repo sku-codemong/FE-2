@@ -236,7 +236,7 @@ export function SubjectCreatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-[992px] mx-auto">
         {/* Back Button */}
         <button
@@ -249,8 +249,8 @@ export function SubjectCreatePage() {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-[24px] text-neutral-950 mb-2">과목 일괄 추가</h1>
-          <p className="text-[16px] text-[#4a5565]">
+          <h1 className="text-[20px] sm:text-[24px] text-neutral-950 mb-2">과목 일괄 추가</h1>
+          <p className="text-[14px] sm:text-[16px] text-[#4a5565]">
             과목 정보를 입력하세요. 일일 시간 분배는 메인 화면에서 할 수 있습니다.
           </p>
         </div>
@@ -259,14 +259,14 @@ export function SubjectCreatePage() {
         {/* Subject Cards */}
         <div className="flex flex-col gap-6">
           {subjects.map((subject, index) => (
-            <div key={subject.id} className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[25px]">
-              <div className="flex items-center justify-between mb-10">
-                <h3 className="text-[18px] text-[#364153]">과목 {index + 1}</h3>
+            <div key={subject.id} className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-4 sm:p-[25px]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-10">
+                <h3 className="text-[16px] sm:text-[18px] text-[#364153]">과목 {index + 1}</h3>
                 {subjects.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeSubject(subject.id)}
-                    className="text-red-500 hover:text-red-700 transition-colors"
+                    className="text-red-500 hover:text-red-700 transition-colors self-start sm:self-auto"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -286,7 +286,7 @@ export function SubjectCreatePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* 학점 */}
                   <div>
                     <label className="block text-[14px] text-neutral-950 mb-2">학점</label>
@@ -346,7 +346,7 @@ export function SubjectCreatePage() {
 
                 {/* 과제 목록 */}
                 {subject.hasExtraWork && (
-                  <div className="bg-purple-50 rounded-[10px] p-4 space-y-3">
+                  <div className="bg-purple-50 rounded-[10px] p-3 sm:p-4 space-y-3">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-[14px] text-neutral-950">과제 목록</label>
                       <button
@@ -361,7 +361,7 @@ export function SubjectCreatePage() {
                     
                     {subject.assignments.map((assignment) => (
                       <div key={assignment.id} className="bg-white rounded-[8px] p-3 space-y-2">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <input
                             type="text"
                             placeholder="과제 이름"
@@ -385,14 +385,26 @@ export function SubjectCreatePage() {
                           className="w-full bg-[#f3f3f5] rounded-[8px] h-[60px] px-3 py-2 text-[14px] text-neutral-950 placeholder:text-[#717182] border-0 focus:outline-none focus:ring-2 focus:ring-[#9810fa] resize-none"
                         />
                       </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <label className="text-[12px] text-[#6a7282] whitespace-nowrap">예상 소요시간:</label>
                           <input
                             type="number"
                             min="10"
                             step="10"
-                            value={assignment.estimatedMin ?? 0}
-                            onChange={(e) => updateAssignment(subject.id, assignment.id, 'estimatedMin', parseInt(e.target.value) || 0)}
+                            inputMode="numeric"
+                            value={
+                              assignment.estimatedMin === undefined || assignment.estimatedMin === null
+                                ? ''
+                                : assignment.estimatedMin
+                            }
+                            onChange={(e) =>
+                              updateAssignment(
+                                subject.id,
+                                assignment.id,
+                                'estimatedMin',
+                                e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0
+                              )
+                            }
                             className="bg-[#f3f3f5] rounded-[8px] h-[32px] px-3 text-[14px] text-neutral-950 border-0 focus:outline-none focus:ring-2 focus:ring-[#9810fa] w-[100px]"
                           />
                           <span className="text-[12px] text-[#6a7282]">분</span>
@@ -433,7 +445,7 @@ export function SubjectCreatePage() {
                   <Label htmlFor={`color-${subject.id}`}>과목 색상</Label>
                   <div className="space-y-3 mt-2">
                     {/* 기본 색상 (파란색, 초록색, 노란색) */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {defaultColors.map((color) => (
                         <button
                           key={color.value}

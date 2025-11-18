@@ -328,16 +328,14 @@ export function FriendsPage() {
                 variant="outline"
                 className="text-[#9810fa] border-[#9810fa] text-[11px] sm:text-sm px-2 sm:px-3 h-8 sm:h-9"
               >
-                <span className="hidden sm:inline">받은 요청</span>
-                <span className="sm:hidden">받은</span>
+                받은 요청
               </Button>
               <Button
                 onClick={() => openRequestsDialog('outgoing')}
                 variant="outline"
                 className="text-[#9810fa] border-[#9810fa] text-[11px] sm:text-sm px-2 sm:px-3 h-8 sm:h-9"
               >
-                <span className="hidden sm:inline">보낸 요청</span>
-                <span className="sm:hidden">보낸</span>
+                보낸 요청
               </Button>
               <Button
                 onClick={() => setShowAddDialog(true)}
