@@ -292,17 +292,38 @@ function getStorage(): Storage | null {
 }
 
 function readToken(key: string): string | null {
-  const storage = getStorage();
-  return storage ? storage.getItem(key) : null;
+  try {
+    const storage = getStorage();
+    if (!storage) {
+      console.warn('[Token] Storage not available');
+      return null;
+    }
+    return storage.getItem(key);
+  } catch (error: any) {
+    console.error(`[Token] Failed to read ${key}:`, error);
+    return null;
+  }
 }
 
 function writeToken(key: string, value: string | null) {
-  const storage = getStorage();
-  if (!storage) return;
-  if (value) {
-    storage.setItem(key, value);
-  } else {
-    storage.removeItem(key);
+  try {
+    const storage = getStorage();
+    if (!storage) {
+      console.error('[Token] Storage not available, cannot write token');
+      return;
+    }
+    if (value) {
+      storage.setItem(key, value);
+      console.log(`[Token] Stored ${key} successfully`);
+    } else {
+      storage.removeItem(key);
+      console.log(`[Token] Removed ${key}`);
+    }
+  } catch (error: any) {
+    console.error(`[Token] Failed to write ${key}:`, error);
+    if (error.name === 'QuotaExceededError') {
+      console.error('[Token] Storage quota exceeded - localStorage is full');
+    }
   }
 }
 
@@ -454,8 +475,30 @@ function normalizeUser(payload: any): User {
 
 function applyAuthSideEffects(payload: any) {
   const { accessToken, refreshToken } = extractTokens(payload);
+  
+  // 디버깅: 토큰 추출 결과 확인
+  console.log('[Auth] Token extraction result:', {
+    hasAccessToken: !!accessToken,
+    hasRefreshToken: !!refreshToken,
+    payloadStructure: payload ? Object.keys(payload) : 'no payload',
+  });
+  
   if (accessToken !== undefined || refreshToken !== undefined) {
     updateStoredTokens(accessToken ?? null, refreshToken ?? null);
+    
+    // 저장 후 확인
+    const storedAccess = getStoredAccessToken();
+    const storedRefresh = getStoredRefreshToken();
+    console.log('[Auth] Tokens stored:', {
+      accessTokenStored: !!storedAccess,
+      refreshTokenStored: !!storedRefresh,
+    });
+    
+    if (accessToken && !storedAccess) {
+      console.error('[Auth] WARNING: Access token was not stored!');
+    }
+  } else {
+    console.warn('[Auth] No tokens found in login response. Payload:', payload);
   }
 }
 
@@ -763,6 +806,13 @@ async function apiRequest<T>(
     const accessToken = getStoredAccessToken();
     if (accessToken) {
       requestHeaders.set('Authorization', `Bearer ${accessToken}`);
+      // 디버깅: 헤더가 제대로 붙었는지 확인
+      if (import.meta.env?.DEV) {
+        console.log(`[API] Authorization header attached for: ${endpoint}`);
+      }
+    } else {
+      // 모바일 디버깅: 토큰이 없을 때 경고
+      console.warn(`[API] Missing access token for: ${endpoint}`);
     }
   }
 
