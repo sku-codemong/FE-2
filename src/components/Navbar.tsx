@@ -14,12 +14,15 @@ interface NavbarProps {
 
 export function Navbar({ user, onLogout }: NavbarProps) {
   const navigate = useNavigate();
+  const [imageError, setImageError] = useState<boolean>(false);
   
   // 디버깅: user 객체와 profileImageUrl 확인
   useEffect(() => {
     if (user) {
       console.log('[Navbar] User object:', user);
       console.log('[Navbar] profileImageUrl:', user.profileImageUrl);
+      // user가 변경되면 이미지 에러 상태 초기화
+      setImageError(false);
     }
   }, [user]);
   
@@ -347,23 +350,19 @@ export function Navbar({ user, onLogout }: NavbarProps) {
             <Link to={`/profile/${user.id}`}>
               <Button variant="ghost" size="sm" className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {user.profileImageUrl && user.profileImageUrl.trim() !== '' ? (
+                  {user.profileImageUrl && user.profileImageUrl.trim() !== '' && !imageError ? (
                     <img 
                       src={user.profileImageUrl} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
                       onLoad={() => {
                         console.log('[Navbar] Profile image loaded successfully:', user.profileImageUrl);
+                        setImageError(false);
                       }}
                       onError={(e) => {
                         // 이미지 로드 실패 시 기본 이미지로 대체
                         console.error('[Navbar] Profile image load failed:', user.profileImageUrl);
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.innerHTML = `<span class="text-xs text-gray-500">${(user.nickname || user.email || 'U').charAt(0).toUpperCase()}</span>`;
-                        }
+                        setImageError(true);
                       }}
                     />
                   ) : (
