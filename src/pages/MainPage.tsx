@@ -22,7 +22,6 @@ export function MainPage({ userId }: MainPageProps) {
   const [recommending, setRecommending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
-  const [tokenStatus, setTokenStatus] = useState<{ hasAccessToken: boolean; hasRefreshToken: boolean } | null>(null);
 
   const formatLocalYYYYMMDD = (d: Date) => {
     const y = d.getFullYear();
@@ -49,25 +48,7 @@ export function MainPage({ userId }: MainPageProps) {
         console.error('API URL 확인 실패:', e);
       }
     };
-    
-    // 토큰 상태 확인 (모바일 디버깅용)
-    const checkTokenStatus = async () => {
-      try {
-        const { getStoredAccessToken, getStoredRefreshToken } = await import('../services/api');
-        const hasAccessToken = !!getStoredAccessToken();
-        const hasRefreshToken = !!getStoredRefreshToken();
-        setTokenStatus({ hasAccessToken, hasRefreshToken });
-        
-        if (!hasAccessToken && !hasRefreshToken) {
-          setError('인증 토큰이 없습니다. 다시 로그인해주세요.');
-        }
-      } catch (e) {
-        console.error('토큰 상태 확인 실패:', e);
-      }
-    };
-    
     checkApiUrl();
-    checkTokenStatus();
     loadData();
   }, []);
 
@@ -258,11 +239,6 @@ export function MainPage({ userId }: MainPageProps) {
                 {apiBaseUrl && (
                   <p className="text-red-600 text-xs mt-2">
                     API URL: {apiBaseUrl || '(설정되지 않음)'}
-                  </p>
-                )}
-                {tokenStatus && (
-                  <p className="text-red-600 text-xs mt-1">
-                    토큰 상태: Access={tokenStatus.hasAccessToken ? '있음' : '없음'}, Refresh={tokenStatus.hasRefreshToken ? '있음' : '없음'}
                   </p>
                 )}
                 <button
