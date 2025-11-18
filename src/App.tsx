@@ -23,6 +23,8 @@ function App() {
     const initializeUser = async () => {
       try {
         const profile = await api.getMe();
+        console.log('[App] Initial user profile:', profile);
+        console.log('[App] profileImageUrl:', profile.profileImageUrl);
         setUser(profile);
         localStorage.setItem('user', JSON.stringify(profile));
       } catch (error) {
@@ -43,7 +45,7 @@ function App() {
 
     const warmUpRefresh = async () => {
       try {
-        await api.refreshToken();
+        await api.refreshToken({ silent: true });
       } catch (error) {
         if (import.meta.env?.DEV) {
           console.debug('Refresh warm-up skipped:', error);

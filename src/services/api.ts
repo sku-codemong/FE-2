@@ -9,6 +9,7 @@ export interface User {
   grade?: number | null;
   gender?: 'Male' | 'Female' | null;
   isCompleted?: boolean;
+  profileImageUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -127,6 +128,7 @@ export interface Friend {
   userId: string;
   nickname: string;
   totalStudyMinutes: number;
+  profileImageUrl?: string | null;
 }
 
 export interface Notification {
@@ -269,6 +271,7 @@ type TokenPair = {
 };
 
 let refreshPromise: Promise<boolean> | null = null;
+let refreshPromiseSilent = true;
 
 const isBrowser = typeof window !== 'undefined';
 
@@ -407,6 +410,15 @@ function normalizeUser(payload: any): User {
         ? genderValue
         : null;
 
+    const profileImage =
+      payload.profile_image_url ??
+      payload.profileImageUrl ??
+      payload.profile_image ??
+      payload.profile ??
+      payload.avatar ??
+      payload.avatar_url ??
+      null;
+
     const isCompletedRaw =
       payload.is_completed ??
       payload.isCompleted ??
@@ -423,6 +435,7 @@ function normalizeUser(payload: any): User {
       nickname: nickname ?? null,
       grade: Number.isFinite(parsedGrade) ? parsedGrade : null,
       gender,
+      profileImageUrl: profileImage ? String(profileImage) : null,
       isCompleted: typeof isCompletedRaw === 'boolean' ? isCompletedRaw : undefined,
       createdAt: payload.created_at ?? payload.createdAt ?? undefined,
       updatedAt: payload.updated_at ?? payload.updatedAt ?? undefined,
@@ -628,65 +641,78 @@ function extractEntity<T>(payload: any): T | null {
   return null;
 }
 
-async function requestTokenRefresh(): Promise<boolean> {
+async function requestTokenRefresh(options?: { silent?: boolean }): Promise<boolean> {
   if (!API_BASE_URL) {
     return false;
   }
 
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      const refreshToken = getStoredRefreshToken();
-      const hasRefreshToken = Boolean(refreshToken);
+  const silent = Boolean(options?.silent);
 
-      const requestInit: RequestInit = {
-        method: 'POST',
-        credentials: 'include',
-      };
-
-      if (hasRefreshToken) {
-        requestInit.headers = {
-          'Content-Type': 'application/json',
-        };
-        requestInit.body = JSON.stringify({
-          refreshToken,
-          refresh_token: refreshToken,
-        });
-      }
-
-      const response = await fetch(`${API_BASE_URL}${REFRESH_ENDPOINT}`, requestInit);
-
-      if (!response.ok) {
-        throw new Error('토큰 갱신에 실패했습니다.');
-      }
-
-      const text = await response.text();
-      let data: any = {};
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch {
-          data = {};
-        }
-      }
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = extractTokens(data);
-
-      // 토큰이 응답에 없을 수도 있으므로(서버가 쿠키만 재발급하는 경우) 존재할 때만 저장
-      if (newAccessToken !== undefined || newRefreshToken !== undefined) {
-        updateStoredTokens(
-          newAccessToken ?? null,
-          newRefreshToken ?? (hasRefreshToken ? refreshToken ?? null : null),
-        );
-      }
-      return true;
-    })()
-      .catch(() => {
-        clearStoredTokens();
-        return false;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
+  if (refreshPromise) {
+    if (!silent) {
+      refreshPromiseSilent = false;
+    }
+    return refreshPromise;
   }
+
+  refreshPromiseSilent = silent;
+
+  refreshPromise = (async () => {
+    const refreshToken = getStoredRefreshToken();
+    const hasRefreshToken = Boolean(refreshToken);
+
+    const requestInit: RequestInit = {
+      method: 'POST',
+      credentials: 'include',
+    };
+
+    if (hasRefreshToken) {
+      requestInit.headers = {
+        'Content-Type': 'application/json',
+      };
+      requestInit.body = JSON.stringify({
+        refreshToken,
+        refresh_token: refreshToken,
+      });
+    }
+
+    const response = await fetch(`${API_BASE_URL}${REFRESH_ENDPOINT}`, requestInit);
+
+    if (!response.ok) {
+      throw new Error('토큰 갱신에 실패했습니다.');
+    }
+
+    const text = await response.text();
+    let data: any = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = {};
+      }
+    }
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = extractTokens(data);
+
+    // 토큰이 응답에 없을 수도 있으므로(서버가 쿠키만 재발급하는 경우) 존재할 때만 저장
+    if (newAccessToken !== undefined || newRefreshToken !== undefined) {
+      updateStoredTokens(
+        newAccessToken ?? null,
+        newRefreshToken ?? (hasRefreshToken ? refreshToken ?? null : null),
+      );
+    }
+    return true;
+  })()
+    .catch((error) => {
+      if (!refreshPromiseSilent) {
+        clearStoredTokens();
+      }
+      console.error('Token refresh failed:', error);
+      return false;
+    })
+    .finally(() => {
+      refreshPromise = null;
+      refreshPromiseSilent = true;
+    });
 
   return refreshPromise;
 }
@@ -758,310 +784,7 @@ async function apiRequest<T>(
   return payload as T;
 }
 
-// ========== Mock Data (개발용) ==========
-let mockCurrentUser: User = {
-  id: '1',
-  email: 'student@example.com',
-  name: '김학생',
-  nickname: null,
-  grade: null,
-  gender: null,
-  isCompleted: false,
-};
 
-let mockDailyAllocation: DailyAllocation | null = null;
-
-let mockSubjects: Subject[] = [
-  {
-    id: 'sub1',
-    userId: mockCurrentUser.id,
-    name: '자료구조',
-    color: '#3B82F6',
-    targetDailyMin: 60,
-    targetWeeklyMin: 420,
-    credit: 3,
-    difficulty: 4,
-    weight: 1.15,
-    archived: false,
-    createdAt: '2025-10-01T00:00:00Z',
-    updatedAt: '2025-11-10T00:00:00Z',
-    hasExtraWork: true,
-  },
-  {
-    id: 'sub2',
-    userId: mockCurrentUser.id,
-    name: '알고리즘',
-    color: '#10B981',
-    targetDailyMin: 45,
-    targetWeeklyMin: 315,
-    credit: 3,
-    difficulty: 5,
-    weight: 1.3,
-    archived: false,
-    createdAt: '2025-10-01T00:00:00Z',
-    updatedAt: '2025-11-10T00:00:00Z',
-    hasExtraWork: true,
-  },
-  {
-    id: 'sub3',
-    userId: mockCurrentUser.id,
-    name: '운영체제',
-    color: '#F59E0B',
-    targetDailyMin: 30,
-    targetWeeklyMin: 210,
-    credit: 3,
-    difficulty: 3,
-    weight: 1.0,
-    archived: false,
-    createdAt: '2025-10-01T00:00:00Z',
-    updatedAt: '2025-11-10T00:00:00Z',
-    hasExtraWork: false,
-  },
-  {
-    id: 'sub4',
-    userId: mockCurrentUser.id,
-    name: '데이터베이스',
-    color: '#8B5CF6',
-    targetDailyMin: 40,
-    targetWeeklyMin: 280,
-    credit: 3,
-    difficulty: 3,
-    weight: 1.1,
-    archived: false,
-    createdAt: '2025-10-01T00:00:00Z',
-    updatedAt: '2025-11-10T00:00:00Z',
-    hasExtraWork: true,
-  },
-];
-
-let mockSessions: Session[] = [
-  // 2025-11-10 (오늘)
-  {
-    id: 'ses1',
-    subjectId: 'sub1',
-    startTime: '2025-11-10T09:00:00',
-    endTime: '2025-11-10T11:30:00',
-    duration: 150,
-    status: 'completed'
-  },
-  {
-    id: 'ses2',
-    subjectId: 'sub2',
-    startTime: '2025-11-10T14:00:00',
-    endTime: '2025-11-10T16:00:00',
-    duration: 120,
-    status: 'completed'
-  },
-  {
-    id: 'ses3',
-    subjectId: 'sub4',
-    startTime: '2025-11-10T16:30:00',
-    endTime: '2025-11-10T18:00:00',
-    duration: 90,
-    status: 'completed'
-  },
-  // 2025-11-09 (어제)
-  {
-    id: 'ses4',
-    subjectId: 'sub1',
-    startTime: '2025-11-09T10:00:00',
-    endTime: '2025-11-09T12:30:00',
-    duration: 150,
-    status: 'completed'
-  },
-  {
-    id: 'ses5',
-    subjectId: 'sub3',
-    startTime: '2025-11-09T14:00:00',
-    endTime: '2025-11-09T16:00:00',
-    duration: 120,
-    status: 'completed'
-  },
-  {
-    id: 'ses6',
-    subjectId: 'sub2',
-    startTime: '2025-11-09T17:00:00',
-    endTime: '2025-11-09T18:30:00',
-    duration: 90,
-    status: 'completed'
-  },
-  // 2025-11-08
-  {
-    id: 'ses7',
-    subjectId: 'sub2',
-    startTime: '2025-11-08T09:00:00',
-    endTime: '2025-11-08T11:00:00',
-    duration: 120,
-    status: 'completed'
-  },
-  {
-    id: 'ses8',
-    subjectId: 'sub4',
-    startTime: '2025-11-08T13:00:00',
-    endTime: '2025-11-08T15:30:00',
-    duration: 150,
-    status: 'completed'
-  },
-  // 2025-11-07
-  {
-    id: 'ses9',
-    subjectId: 'sub1',
-    startTime: '2025-11-07T10:00:00',
-    endTime: '2025-11-07T12:00:00',
-    duration: 120,
-    status: 'completed'
-  },
-  {
-    id: 'ses10',
-    subjectId: 'sub3',
-    startTime: '2025-11-07T14:00:00',
-    endTime: '2025-11-07T16:30:00',
-    duration: 150,
-    status: 'completed'
-  },
-  // 2025-11-06
-  {
-    id: 'ses11',
-    subjectId: 'sub2',
-    startTime: '2025-11-06T09:00:00',
-    endTime: '2025-11-06T11:30:00',
-    duration: 150,
-    status: 'completed'
-  },
-  {
-    id: 'ses12',
-    subjectId: 'sub4',
-    startTime: '2025-11-06T15:00:00',
-    endTime: '2025-11-06T16:30:00',
-    duration: 90,
-    status: 'completed'
-  },
-  // 2025-11-05
-  {
-    id: 'ses13',
-    subjectId: 'sub1',
-    startTime: '2025-11-05T10:00:00',
-    endTime: '2025-11-05T12:30:00',
-    duration: 150,
-    status: 'completed'
-  },
-  {
-    id: 'ses14',
-    subjectId: 'sub3',
-    startTime: '2025-11-05T14:00:00',
-    endTime: '2025-11-05T16:00:00',
-    duration: 120,
-    status: 'completed'
-  },
-  {
-    id: 'ses15',
-    subjectId: 'sub2',
-    startTime: '2025-11-05T17:00:00',
-    endTime: '2025-11-05T18:00:00',
-    duration: 60,
-    status: 'completed'
-  },
-  // 2025-11-04
-  {
-    id: 'ses16',
-    subjectId: 'sub4',
-    startTime: '2025-11-04T09:00:00',
-    endTime: '2025-11-04T11:00:00',
-    duration: 120,
-    status: 'completed'
-  },
-  {
-    id: 'ses17',
-    subjectId: 'sub1',
-    startTime: '2025-11-04T13:00:00',
-    endTime: '2025-11-04T15:30:00',
-    duration: 150,
-    status: 'completed'
-  },
-  {
-    id: 'ses18',
-    subjectId: 'sub3',
-    startTime: '2025-11-04T16:00:00',
-    endTime: '2025-11-04T17:30:00',
-    duration: 90,
-    status: 'completed'
-  }
-];
-
-let mockActiveSession: Session | null = null;
-
-let mockFriends: Friend[] = [
-  { id: 'f1', userId: 'alice', nickname: '앨리스', totalStudyMinutes: 1230 },
-  { id: 'f2', userId: 'bob', nickname: '밥', totalStudyMinutes: 980 },
-  { id: 'f3', userId: 'charlie', nickname: '찰리', totalStudyMinutes: 760 },
-  { id: 'f4', userId: 'david', nickname: '데이비드', totalStudyMinutes: 540 },
-];
-
-let mockNotifications: Notification[] = [
-  { id: 'n1', type: 'friend_request', title: '친구 요청', message: '밥이 친구가 되기를 원해요', createdAt: new Date().toISOString(), read: false },
-  { id: 'n2', type: 'achievement', title: '배지 획득', message: '연속 3일 학습 달성!', createdAt: new Date(Date.now() - 3600_000).toISOString(), read: false },
-  { id: 'n3', type: 'reminder', title: '학습 리마인더', message: '오늘 학습을 시작해보세요', createdAt: new Date(Date.now() - 86400_000).toISOString(), read: true },
-];
-let mockTasks: Assignment[] = [
-  {
-    id: 1,
-    userId: 1,
-    subjectId: 1,
-    type: 'assignment',
-    title: '이진 트리 구현 과제',
-    description: null,
-    dueAt: '2025-11-15T00:00:00Z',
-    estimatedMin: 120,
-    status: 'todo',
-    createdAt: '2025-11-01T00:00:00Z',
-    updatedAt: '2025-11-01T00:00:00Z',
-  },
-  {
-    id: 2,
-    userId: 1,
-    subjectId: 2,
-    type: 'assignment',
-    title: '동적 프로그래밍 과제',
-    description: '메모이제이션과 탑다운 비교',
-    dueAt: '2025-11-20T23:59:59Z',
-    estimatedMin: 150,
-    status: 'in_progress',
-    createdAt: '2025-11-03T00:00:00Z',
-    updatedAt: '2025-11-08T00:00:00Z',
-  },
-];
-
-const MOCK_ACCESS_TOKEN = 'mock-access-token';
-const MOCK_REFRESH_TOKEN = 'mock-refresh-token';
-
-function buildMockAuthPayload(user: User) {
-  return {
-    user,
-    accessToken: MOCK_ACCESS_TOKEN,
-    refreshToken: MOCK_REFRESH_TOKEN,
-  };
-}
-
-async function mockSignupImpl(name: string, email: string, password: string): Promise<User> {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  if (name && email && password) {
-    mockCurrentUser = {
-      id: String(Date.now()),
-      email,
-      name,
-      nickname: null,
-      grade: null,
-      gender: null,
-      isCompleted: false,
-    };
-    return processAuthPayload(buildMockAuthPayload(mockCurrentUser));
-  }
-  throw new Error('Invalid signup data');
-}
-
-async function mockRegisterImpl(data: { name: string; email: string; password: string }): Promise<User> {
-  return mockSignupImpl(data.name, data.email, data.password);
-}
 
 async function realLoginImpl(email: string, password: string): Promise<User> {
   const payload = await apiRequest<any>('/api/auth/login', {
@@ -1082,609 +805,6 @@ async function realRegisterImpl(data: { name: string; email: string; password: s
   });
   return processAuthPayload(payload);
 }
-
-// ========== Mock API Functions ==========
-const mockApi = {
-  getMe: async (): Promise<User> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return normalizeUser({ ...mockCurrentUser });
-  },
-
-  // 친구/알림 (Mock)
-  getFriends: async (): Promise<Friend[]> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return [...mockFriends].sort((a, b) => b.totalStudyMinutes - a.totalStudyMinutes);
-  },
-
-  // 사용자 검색 (친구 추가용)
-  searchUsers: async (query: string): Promise<Array<{ userId: string; nickname: string }>> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    // 간단 Mock: query 포함하는 사용자
-    const pool = [
-      { userId: 'alice', nickname: '앨리스' },
-      { userId: 'bob', nickname: '밥' },
-      { userId: 'charlie', nickname: '찰리' },
-      { userId: 'david', nickname: '데이비드' },
-    ];
-    return pool.filter(u => u.userId.includes(query) || u.nickname.includes(query));
-  },
-
-  // 친구 요청 보내기
-  sendFriendRequest: async (_toUserId: string): Promise<{ requestId: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 150));
-    return { requestId: `req_${Date.now()}` };
-  },
-
-  // 받은/보낸 요청 목록
-  getIncomingFriendRequests: async (): Promise<Array<{ id: string; fromUserId: string }>> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return [];
-  },
-  getOutgoingFriendRequests: async (): Promise<Array<{ id: string; toUserId: string }>> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return [];
-  },
-
-  // 친구 요청 수락/거절/취소
-  respondFriendRequest: async (_requestId: string, _action: 'accept' | 'reject' | 'cancel'): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return;
-  },
-
-  // 토큰 재발급 (Mock)
-  refreshToken: async (): Promise<{ accessToken: string; refreshToken: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return {
-      accessToken: MOCK_ACCESS_TOKEN,
-      refreshToken: MOCK_REFRESH_TOKEN,
-    };
-  },
-
-  // 친구 삭제
-  deleteFriend: async (friendUserId: string): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    mockFriends = mockFriends.filter(f => f.userId !== friendUserId);
-  },
-
-  // 친구 프로필 조회
-  getFriendProfile: async (friendUserId: string): Promise<User> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    // Mock: 친구 목록에서 찾거나 기본 사용자 반환
-    const friend = mockFriends.find(f => f.userId === friendUserId);
-    if (friend) {
-      return normalizeUser({
-        id: friend.userId,
-        email: `${friend.userId}@example.com`,
-        nickname: friend.nickname,
-        name: friend.nickname,
-        grade: null,
-        gender: null,
-        isCompleted: true,
-      });
-    }
-    return normalizeUser({ ...mockCurrentUser });
-  },
-
-  // 친구 과목 목록 조회
-  getFriendSubjects: async (_friendUserId: string): Promise<Subject[]> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    // Mock: 친구의 과목은 현재 사용자 과목과 동일하게 반환 (실제로는 별도 데이터 필요)
-    return mockSubjects.filter(s => !s.archived);
-  },
-
-  // 친구 세션 목록 조회 (하루)
-  getFriendSessions: async (_friendUserId: string, date?: string): Promise<Session[]> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    let filtered = [...mockSessions];
-    if (date) {
-      filtered = filtered.filter(s => s.startTime.startsWith(date));
-    }
-    return filtered;
-  },
-
-  getNotifications: async (): Promise<Notification[]> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    // 최신순
-    return [...mockNotifications].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  },
-
-  markNotificationAsRead: async (id: string): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    mockNotifications = mockNotifications.map(n => n.id === id ? { ...n, read: true } : n);
-  },
-
-  markAllNotificationsAsRead: async (): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    mockNotifications = mockNotifications.map(n => ({ ...n, read: true }));
-  },
-
-  login: async (email: string, password: string): Promise<User> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    if (email && password) {
-      return processAuthPayload(buildMockAuthPayload(mockCurrentUser));
-    }
-    throw new Error('Invalid credentials');
-  },
-
-  signup: mockSignupImpl,
-
-  register: mockRegisterImpl,
-
-  logout: async (): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    clearStoredTokens();
-  },
-
-  updateProfile: async (data: { nickname: string; grade?: number; gender?: 'male' | 'female'; isCompleted?: boolean }): Promise<User> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    mockCurrentUser = {
-      ...mockCurrentUser,
-      nickname: data.nickname,
-      grade: typeof data.grade === 'number' ? data.grade : mockCurrentUser.grade ?? null,
-      gender:
-        data.gender !== undefined
-          ? data.gender === 'female'
-            ? 'Female'
-            : 'Male'
-          : mockCurrentUser.gender ?? null,
-      isCompleted: data.isCompleted !== undefined ? data.isCompleted : true,
-    };
-    return normalizeUser({ ...mockCurrentUser });
-  },
-
-  getSubjects: async (includeArchived = false): Promise<Subject[]> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const list = includeArchived
-      ? mockSubjects
-      : mockSubjects.filter(s => !s.archived);
-
-    return list.map(subject => ({
-      ...subject,
-      assignments: mockTasks.filter(task =>
-        task.subjectId !== null && String(task.subjectId) === String(subject.id)
-      ),
-      hasExtraWork: mockTasks.some(task =>
-        task.subjectId !== null && String(task.subjectId) === String(subject.id)
-      ),
-    }));
-  },
-
-  getSubject: async (subjectId: string): Promise<Subject | null> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const subject = mockSubjects.find(s => s.id === subjectId);
-    if (!subject) return null;
-
-    const assignmentsForSubject = mockTasks.filter(task =>
-      task.subjectId !== null && String(task.subjectId) === String(subjectId)
-    );
-
-    return {
-      ...subject,
-      assignments: assignmentsForSubject,
-      hasExtraWork: assignmentsForSubject.length > 0,
-    };
-  },
-
-  createSubject: async (data: Omit<Subject, 'id' | 'createdAt' | 'updatedAt' | 'targetWeeklyMin'> & { targetDailyMin: number; credit?: number | null }) => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const now = new Date().toISOString();
-    const newSubject: Subject = {
-      id: String(Date.now()),
-      userId: mockCurrentUser.id,
-      name: data.name,
-      color: data.color ?? null,
-      targetDailyMin: data.targetDailyMin ?? 0,
-      targetWeeklyMin: (data.targetDailyMin ?? 0) * 7,
-      credit: data.credit ?? null,
-      difficulty: data.difficulty,
-      weight: data.weight ?? 1,
-      archived: false,
-      createdAt: now,
-      updatedAt: now,
-    };
-    mockSubjects.push(newSubject);
-    return newSubject;
-  },
-
-  updateSubject: async (subjectId: string, data: Partial<Subject>): Promise<Subject> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const index = mockSubjects.findIndex(s => s.id === subjectId);
-    if (index === -1) throw new Error('Subject not found');
-    
-    const current = mockSubjects[index];
-    const updated: Subject = {
-      ...current,
-      name: data.name ?? current.name,
-      color: data.color ?? current.color,
-      targetDailyMin: data.targetDailyMin ?? current.targetDailyMin,
-      targetWeeklyMin: data.targetDailyMin !== undefined ? data.targetDailyMin * 7 : current.targetWeeklyMin,
-      credit: data.credit !== undefined ? data.credit : current.credit,
-      difficulty: data.difficulty ?? current.difficulty,
-      weight: data.weight ?? current.weight,
-      archived: data.archived ?? current.archived,
-      updatedAt: new Date().toISOString(),
-    };
-
-    mockSubjects[index] = updated;
-    return updated;
-  },
-
-  deleteSubject: async (subjectId: string): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    mockSubjects = mockSubjects.filter(s => s.id !== subjectId);
-  },
-
-  archiveSubject: async (subjectId: string): Promise<Subject> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const index = mockSubjects.findIndex(s => s.id === subjectId);
-    if (index === -1) throw new Error('Subject not found');
-    
-    mockSubjects[index].archived = true;
-    return mockSubjects[index];
-  },
-
-  getSessions: async (filters?: {
-    from?: string;
-    to?: string;
-    subjectId?: string;
-    status?: string;
-  }): Promise<Session[]> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    let filtered = [...mockSessions];
-    
-    if (filters?.subjectId) {
-      filtered = filtered.filter(s => s.subjectId === filters.subjectId);
-    }
-    if (filters?.from) {
-      filtered = filtered.filter(s => s.startTime >= filters.from!);
-    }
-    if (filters?.to) {
-      filtered = filtered.filter(s => s.startTime <= filters.to!);
-    }
-    if (filters?.status) {
-      filtered = filtered.filter(s => s.status === filters.status);
-    }
-    
-    return filtered;
-  },
-
-  startSession: async (subjectId: string): Promise<Session> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const newSession: Session = {
-      id: `ses${Date.now()}`,
-      subjectId,
-      startTime: new Date().toISOString(),
-      duration: 0,
-      status: 'active'
-    };
-    mockSessions.push(newSession);
-    mockActiveSession = newSession;
-    return newSession;
-  },
-
-  stopSession: async (sessionId: string): Promise<Session> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const session = mockSessions.find(s => s.id === sessionId);
-    if (!session) throw new Error('Session not found');
-    
-    const endTime = new Date();
-    const startTime = new Date(session.startTime);
-    const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60);
-    
-    session.endTime = endTime.toISOString();
-    session.duration = duration;
-    session.status = 'completed';
-    mockActiveSession = null;
-    
-    return session;
-  },
-
-  // 세션 노트 업데이트
-  updateSessionNote: async (sessionId: string, note: string): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const session = mockSessions.find(s => s.id === sessionId);
-    if (!session) throw new Error('Session not found');
-    // Mock에서는 노트 업데이트 로직이 필요없지만 일관성을 위해 함수 제공
-    console.log(`Updating note for session ${sessionId}: ${note}`);
-  },
-
-  createManualSession: async (data: {
-    subjectId: string;
-    startTime: string;
-    endTime: string;
-  }): Promise<Session> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const start = new Date(data.startTime);
-    const end = new Date(data.endTime);
-    const duration = Math.floor((end.getTime() - start.getTime()) / 1000 / 60);
-    
-    const newSession: Session = {
-      id: `ses${Date.now()}`,
-      subjectId: data.subjectId,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      duration,
-      status: 'manual'
-    };
-    mockSessions.push(newSession);
-    return newSession;
-  },
-
-  getActiveSession: (): Session | null => {
-    return mockActiveSession;
-  },
-
-  getLatestSession: async (subjectId: string): Promise<Session | null> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const sessions = mockSessions.filter(s => s.subjectId === subjectId);
-    if (sessions.length === 0) return null;
-    
-    return sessions.reduce((latest, current) => 
-      new Date(current.startTime) > new Date(latest.startTime) ? current : latest
-    );
-  },
-
-  getDailyReport: async (date: string): Promise<DailyReport> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const sessions = mockSessions.filter(s => 
-      s.startTime.startsWith(date) && s.status === 'completed'
-    );
-    
-    const subjectMap = new Map<string, number>();
-    sessions.forEach(s => {
-      const current = subjectMap.get(s.subjectId) || 0;
-      subjectMap.set(s.subjectId, current + s.duration);
-    });
-    
-    const subjects = Array.from(subjectMap.entries()).map(([subjectId, minutes]) => {
-      const subject = mockSubjects.find(s => s.id === subjectId);
-      return {
-        subjectId,
-        subjectName: subject?.name || 'Unknown',
-        color: subject?.color || '#000000',
-        minutes
-      };
-    });
-    
-    const totalMinutes = subjects.reduce((sum, s) => sum + s.minutes, 0);
-    
-    return { date, totalMinutes, subjects };
-  },
-
-  getWeeklyReport: async (weekStart: string): Promise<WeeklyReport> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const start = new Date(weekStart);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    
-    const sessions = mockSessions.filter(s => {
-      const sessionDate = new Date(s.startTime);
-      return sessionDate >= start && sessionDate < end && s.status === 'completed';
-    });
-    
-    const subjectMap = new Map<string, number>();
-    sessions.forEach(s => {
-      const current = subjectMap.get(s.subjectId) || 0;
-      subjectMap.set(s.subjectId, current + s.duration);
-    });
-    
-    const subjects = Array.from(subjectMap.entries()).map(([subjectId, minutes]) => {
-      const subject = mockSubjects.find(s => s.id === subjectId);
-      return {
-        subjectId,
-        subjectName: subject?.name || 'Unknown',
-        color: subject?.color || '#000000',
-        minutes,
-        targetMinutes: subject?.targetWeeklyMin || 0
-      };
-    });
-    
-    const dailyBreakdown: { date: string; minutes: number }[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      const daySessions = sessions.filter(s => s.startTime.startsWith(dateStr));
-      const minutes = daySessions.reduce((sum, s) => sum + s.duration, 0);
-      
-      dailyBreakdown.push({ date: dateStr, minutes });
-    }
-    
-    const totalMinutes = subjects.reduce((sum, s) => sum + s.minutes, 0);
-    
-    return {
-      weekStart,
-      weekEnd: end.toISOString().split('T')[0],
-      totalMinutes,
-      subjects,
-      dailyBreakdown
-    };
-  },
-
-  // 일일 시간 분배
-  createDailyAllocation: async (totalAvailableMinutes: number): Promise<DailyAllocation> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 활성 과목만 가져오기
-    const activeSubjects = mockSubjects.filter(s => !s.archived);
-    
-    // 각 과목의 가중치 계산
-    const subjectsWithWeight = activeSubjects.map(subject => {
-      const baseWeight = (subject.weight ?? 1) * subject.difficulty;
-      const finalWeight = subject.hasExtraWork ? baseWeight * 1.3 : baseWeight;
-      return { ...subject, finalWeight };
-    });
-    
-    // 전체 가중치 합계
-    const totalWeight = subjectsWithWeight.reduce((sum, s) => sum + s.finalWeight, 0);
-    
-    // 각 과목에 시간 분배
-    const subjects = subjectsWithWeight.map(subject => ({
-      subjectId: subject.id,
-      allocatedMinutes: Math.round((subject.finalWeight / totalWeight) * totalAvailableMinutes)
-    }));
-    
-    mockDailyAllocation = {
-      date: today,
-      totalAvailableMinutes,
-      subjects
-    };
-    
-    // 각 과목의 targetDailyMin 업데이트
-    subjects.forEach(({ subjectId, allocatedMinutes }) => {
-      const subject = mockSubjects.find(s => s.id === subjectId);
-      if (subject) {
-        subject.targetDailyMin = allocatedMinutes;
-      }
-    });
-    
-    return mockDailyAllocation;
-  },
-
-  getDailyAllocation: async (): Promise<DailyAllocation | null> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 오늘 날짜의 allocation이면 반환, 아니면 null
-    if (mockDailyAllocation && mockDailyAllocation.date === today) {
-      return mockDailyAllocation;
-    }
-    return null;
-  },
-
-  // 오늘의 분배 추천
-  getTodayRecommendation: async (): Promise<DailyAllocation> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 활성 과목만 가져오기
-    const activeSubjects = mockSubjects.filter(s => !s.archived);
-    
-    if (activeSubjects.length === 0) {
-      throw new Error('분배할 과목이 없습니다');
-    }
-    
-    // 각 과목의 가중치 계산
-    const subjectsWithWeight = activeSubjects.map(subject => {
-      const baseWeight = (subject.weight ?? 1) * subject.difficulty;
-      const finalWeight = subject.hasExtraWork ? baseWeight * 1.3 : baseWeight;
-      return { ...subject, finalWeight };
-    });
-    
-    // 전체 가중치 합계
-    const totalWeight = subjectsWithWeight.reduce((sum, s) => sum + s.finalWeight, 0);
-    
-    // 기본 추천 시간: 각 과목의 targetDailyMin 합계 또는 180분 중 큰 값
-    const totalTargetMinutes = activeSubjects.reduce((sum, s) => sum + (s.targetDailyMin || 0), 0);
-    const recommendedMinutes = Math.max(totalTargetMinutes, 180);
-    
-    // 각 과목에 시간 분배
-    const subjects = subjectsWithWeight.map(subject => ({
-      subjectId: subject.id,
-      allocatedMinutes: Math.round((subject.finalWeight / totalWeight) * recommendedMinutes)
-    }));
-    
-    return {
-      date: today,
-      totalAvailableMinutes: recommendedMinutes,
-      subjects
-    };
-  },
-
-  // 일일 목표 총 공부 시간 설정
-  updateDailyTarget: async (totalAvailableMinutes: number): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    // Mock API에서는 단순히 성공 처리
-    console.log('Mock: Daily target updated to', totalAvailableMinutes, 'minutes');
-  },
-
-  // ========== 과제 관련 API ==========
-  
-  // 과제 생성
-  createTask: async (data: {
-    subjectId: number;
-    type: 'assignment';
-    title: string;
-    description?: string | null;
-    dueAt?: string | null;
-    estimatedMin?: number | null;
-  }): Promise<Assignment> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const newTask: Assignment = {
-      id: Date.now(),
-      userId: 1,
-      subjectId: data.subjectId,
-      type: 'assignment',
-      title: data.title,
-      description: data.description ?? null,
-      dueAt: data.dueAt ?? null,
-      estimatedMin: data.estimatedMin ?? null,
-      status: 'todo',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    mockTasks.push(newTask);
-    return newTask;
-  },
-
-  // 과제 목록 조회
-  getTasks: async (filters?: { subjectId?: number }): Promise<Assignment[]> => {
-    const subjectIdValue = filters?.subjectId;
-    await new Promise(resolve => setTimeout(resolve, 100));
- 
-    if (subjectIdValue !== undefined) {
-      return mockTasks.filter(task =>
-        task.subjectId !== null && String(task.subjectId) === String(subjectIdValue)
-      );
-    }
- 
-    return mockTasks;
-  },
-
-  // 과제 단건 조회
-  getTask: async (taskId: number): Promise<Assignment> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const task = mockTasks.find(a => a.id === taskId);
-    if (task) {
-      return task;
-    }
-    throw new Error('Task not found');
-  },
-
-  // 과제 정보 수정
-  updateTask: async (taskId: number, data: Partial<Assignment>): Promise<Assignment> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const taskIndex = mockTasks.findIndex(a => a.id === taskId);
-    if (taskIndex !== -1) {
-      const existing = mockTasks[taskIndex];
-      const updatedTask: Assignment = {
-        ...existing,
-        ...data,
-        updatedAt: new Date().toISOString(),
-      };
-      mockTasks[taskIndex] = updatedTask;
-      return updatedTask;
-    }
-    
-    throw new Error('Task not found');
-  },
-
-  // 과제 삭제
-  deleteTask: async (taskId: number): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const index = mockTasks.findIndex(a => a.id === taskId);
-    if (index !== -1) {
-      mockTasks.splice(index, 1);
-      return;
-    }
-
-    throw new Error('Task not found');
-  }
-};
 
 // ========== Real API Functions ==========
 const realApi = {
@@ -1788,8 +908,8 @@ const realApi = {
   },
 
   // 토큰 재발급
-  refreshToken: async (): Promise<{ accessToken: string | null; refreshToken: string | null }> => {
-    const refreshed = await requestTokenRefresh();
+  refreshToken: async (options?: { silent?: boolean }): Promise<{ accessToken: string | null; refreshToken: string | null }> => {
+    const refreshed = await requestTokenRefresh(options);
     if (!refreshed) {
       throw new Error('토큰을 갱신할 수 없습니다.');
     }
@@ -1836,6 +956,7 @@ const realApi = {
         userId: String(u.id ?? f.user_id ?? f.userId ?? ''),
         nickname: u.nickname ?? u.name ?? u.userId ?? '',
         totalStudyMinutes: Number(f.total_study_min ?? f.totalStudyMinutes ?? 0),
+        profileImageUrl: u.profile_image_url ?? u.profileImageUrl ?? u.profile_image ?? u.image_url ?? u.imageUrl ?? null,
       };
     });
   },
@@ -1928,6 +1049,27 @@ const realApi = {
     });
     const user = normalizeUser(payload);
     return user;
+  },
+
+  updateProfileImage: async (formData: FormData): Promise<{ profileImageUrl: string | null }> => {
+    const payload = await apiRequest<any>('/api/user/me/profile-image', {
+      method: 'PATCH',
+      body: formData,
+    });
+    const url =
+      payload?.profile_image_url ??
+      payload?.profileImageUrl ??
+      payload?.url ??
+      payload?.data?.profile_image_url ??
+      payload?.data?.profileImageUrl ??
+      payload?.data?.url ??
+      null;
+
+    if (url && typeof url === 'string') {
+      return { profileImageUrl: url };
+    }
+
+    return { profileImageUrl: null };
   },
 
   getSubjects: async (includeArchived = false): Promise<Subject[]> => {

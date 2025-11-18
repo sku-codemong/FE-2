@@ -260,7 +260,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             {/* 안내 메시지 */}
             <div className="bg-purple-50 rounded-[10px] border border-purple-200 p-4">
               <p className="text-[14px] text-[#6a7282]">
-                💡 프로필은 나중에 프로필 페이지에서 수정할 수 있습니다.
+                💡 프로필 사진 및 정보는 프로필 페이지에서 수정할 수 있습니다.
               </p>
             </div>
 

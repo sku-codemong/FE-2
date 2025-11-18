@@ -19,6 +19,7 @@ interface FriendWithStats {
   totalStudyMinutes: number;
   weeklyStudyMinutes: number; // 일주일 학습 시간 (분)
   weeklyStudySeconds: number; // 일주일 학습 시간 (초)
+  profileImageUrl?: string | null;
 }
 
 export function FriendsPage() {
@@ -358,25 +359,34 @@ export function FriendsPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              {topThree.map((friend, index) => {
-                const rankColors = [
-                  'from-amber-400 to-yellow-500',
-                  'from-gray-300 to-slate-400',
-                  'from-orange-300 to-amber-500'
-                ];
-                const rankIcons = ['🥇', '🥈', '🥉'];
-
+              {topThree.map((friend) => {
                 return (
                   <div
                     key={friend.id}
                     className="bg-white rounded-[16px] border-2 border-[rgba(0,0,0,0.1)] p-6 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="flex flex-col items-center text-center">
-                      {/* 순위 배지 */}
-                      <div
-                        className={`w-16 h-16 rounded-full bg-gradient-to-br ${rankColors[index]} flex items-center justify-center mb-3 shadow-lg`}
-                      >
-                        <span className="text-[32px]">{rankIcons[index]}</span>
+                      {/* 프로필 이미지 */}
+                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-3 shadow-lg">
+                        {friend.profileImageUrl ? (
+                          <img 
+                            src={friend.profileImageUrl} 
+                            alt={friend.nickname} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `<span class="text-2xl text-gray-500">${(friend.nickname || 'U').charAt(0).toUpperCase()}</span>`;
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="text-2xl text-gray-500">
+                            {(friend.nickname || 'U').charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
 
                       {/* 닉네임 */}
@@ -445,11 +455,27 @@ export function FriendsPage() {
                       </span>
                     </div>
 
-                    {/* 프로필 아이콘 */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white">
-                      <span className="text-[16px]">
-                        {friend.nickname.charAt(0)}
-                      </span>
+                    {/* 프로필 이미지 */}
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {friend.profileImageUrl ? (
+                        <img 
+                          src={friend.profileImageUrl} 
+                          alt={friend.nickname} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<span class="text-[16px] text-gray-500">${(friend.nickname || 'U').charAt(0).toUpperCase()}</span>`;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-[16px] text-gray-500">
+                          {(friend.nickname || 'U').charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
 
                     {/* 정보 */}

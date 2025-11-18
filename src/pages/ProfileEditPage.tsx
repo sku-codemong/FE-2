@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api, User } from '../services/api';
@@ -12,7 +12,11 @@ interface FormState {
   gender: FormGender;
 }
 
-export function ProfileEditPage() {
+interface ProfileEditPageProps {
+  onProfileUpdate?: (user: User) => void;
+}
+
+export function ProfileEditPage({ onProfileUpdate }: ProfileEditPageProps) {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -23,10 +27,19 @@ export function ProfileEditPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [localImagePreview, setLocalImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadProfile();
-  }, []);
+    return () => {
+      if (localImagePreview) {
+        URL.revokeObjectURL(localImagePreview);
+      }
+    };
+  }, [localImagePreview]);
 
   const normalizeGender = (value: User['gender']): FormGender => {
     if (!value) return 'male';
@@ -42,6 +55,7 @@ export function ProfileEditPage() {
         grade: userData.grade || 1,
         gender: normalizeGender(userData.gender),
       });
+      setProfileImageUrl(userData.profileImageUrl ?? null);
     } catch (error) {
       toast.error('프로필을 불러오는데 실패했습니다');
     } finally {
@@ -66,6 +80,32 @@ export function ProfileEditPage() {
         // gender는 수정할 수 없으므로 제외
       });
 
+      if (selectedImageFile) {
+        const imageFormData = new FormData();
+        imageFormData.append('profile_image', selectedImageFile);
+        try {
+          const result = await api.updateProfileImage(imageFormData);
+          setProfileImageUrl(result.profileImageUrl ?? profileImageUrl ?? null);
+        } catch (imageError) {
+          console.error('Profile image upload failed:', imageError);
+          toast.error('프로필 사진 업로드에 실패했습니다');
+          setSaving(false);
+          return;
+        }
+      }
+
+      // 최신 사용자 정보를 가져와서 App.tsx의 user state 업데이트
+      try {
+        const updatedUser = await api.getMe();
+        if (onProfileUpdate) {
+          onProfileUpdate(updatedUser);
+        }
+        // localStorage도 업데이트
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } catch (error) {
+        console.error('Failed to refresh user data:', error);
+      }
+
       toast.success('프로필이 수정되었습니다');
       navigate(`/profile/${userId ?? user?.id ?? ''}`);
     } catch (error) {
@@ -73,6 +113,45 @@ export function ProfileEditPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleProfileImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (localImagePreview) {
+      URL.revokeObjectURL(localImagePreview);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setSelectedImageFile(file);
+    setLocalImagePreview(previewUrl);
+  };
+
+  const renderAvatar = () => {
+    const imageSrc = localImagePreview || profileImageUrl;
+    if (imageSrc) {
+      return (
+        <img
+          src={imageSrc}
+          alt="프로필 이미지"
+          className="w-full h-full object-cover"
+        />
+      );
+    }
+
+    const initial =
+      (formData.nickname?.charAt(0) ||
+        user?.nickname?.charAt(0) ||
+        user?.email?.charAt(0) ||
+        '?'
+      ).toUpperCase();
+
+    return (
+      <span className="text-2xl font-semibold text-white flex items-center justify-center h-full w-full bg-gradient-to-br from-[#9810fa] to-[#2b7fff]">
+        {initial}
+      </span>
+    );
   };
 
   if (loading) {
@@ -106,6 +185,34 @@ export function ProfileEditPage() {
           <h1 className="text-[20px] text-neutral-950 mb-8">프로필 수정</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-[14px] text-neutral-950 mb-3">프로필 사진</label>
+              <div className="flex items-center gap-4">
+                <div className="w-[80px] h-[80px] rounded-full overflow-hidden border border-[rgba(0,0,0,0.08)] bg-gray-200">
+                  {renderAvatar()}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 h-[40px] rounded-[8px] bg-[#9810fa] text-white text-[14px] hover:bg-[#7c0fcd] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      사진 선택
+                    </button>
+                  </div>
+                  <p className="text-[12px] text-[#6a7282]">JPG 또는 PNG 파일을 업로드할 수 있어요.</p>
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfileImageSelect}
+              />
+            </div>
+
             <div>
               <label className="block text-[14px] text-neutral-950 mb-2">아이디</label>
               <input
