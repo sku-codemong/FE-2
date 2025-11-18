@@ -292,17 +292,41 @@ function getStorage(): Storage | null {
 }
 
 function readToken(key: string): string | null {
-  const storage = getStorage();
-  return storage ? storage.getItem(key) : null;
+  try {
+    const storage = getStorage();
+    if (!storage) {
+      console.warn('[Token] Storage not available');
+      return null;
+    }
+    const token = storage.getItem(key);
+    console.log(`[Token] Read ${key}:`, token ? 'exists' : 'not found');
+    return token;
+  } catch (error: any) {
+    console.error(`[Token] Failed to read ${key}:`, error);
+    return null;
+  }
 }
 
 function writeToken(key: string, value: string | null) {
-  const storage = getStorage();
-  if (!storage) return;
-  if (value) {
-    storage.setItem(key, value);
-  } else {
-    storage.removeItem(key);
+  try {
+    const storage = getStorage();
+    if (!storage) {
+      console.error('[Token] Storage not available, cannot write token');
+      return;
+    }
+    if (value) {
+      storage.setItem(key, value);
+      console.log(`[Token] Stored ${key}:`, value.substring(0, 20) + '...');
+    } else {
+      storage.removeItem(key);
+      console.log(`[Token] Removed ${key}`);
+    }
+  } catch (error: any) {
+    console.error(`[Token] Failed to write ${key}:`, error);
+    // 모바일에서 localStorage가 가득 찬 경우 등
+    if (error.name === 'QuotaExceededError') {
+      console.error('[Token] Storage quota exceeded');
+    }
   }
 }
 
@@ -454,8 +478,28 @@ function normalizeUser(payload: any): User {
 
 function applyAuthSideEffects(payload: any) {
   const { accessToken, refreshToken } = extractTokens(payload);
+  console.log('[Auth] Extracted tokens:', {
+    hasAccessToken: !!accessToken,
+    hasRefreshToken: !!refreshToken,
+    payloadKeys: payload ? Object.keys(payload) : [],
+  });
+  
   if (accessToken !== undefined || refreshToken !== undefined) {
     updateStoredTokens(accessToken ?? null, refreshToken ?? null);
+    
+    // 저장 후 확인
+    const storedAccess = getStoredAccessToken();
+    const storedRefresh = getStoredRefreshToken();
+    console.log('[Auth] Tokens after storage:', {
+      accessTokenStored: !!storedAccess,
+      refreshTokenStored: !!storedRefresh,
+    });
+    
+    if (!storedAccess && accessToken) {
+      console.error('[Auth] WARNING: Access token was not stored successfully!');
+    }
+  } else {
+    console.warn('[Auth] No tokens found in payload. Backend may be using cookies only.');
   }
 }
 
@@ -763,6 +807,16 @@ async function apiRequest<T>(
     const accessToken = getStoredAccessToken();
     if (accessToken) {
       requestHeaders.set('Authorization', `Bearer ${accessToken}`);
+    } else {
+      // 모바일 디버깅: 토큰이 없을 때 상세 정보 로깅
+      const storage = getStorage();
+      console.warn('[API Request] Missing access token for:', endpoint);
+      console.warn('[API Request] Storage check:', {
+        storageAvailable: !!storage,
+        allKeys: storage ? Object.keys(storage) : [],
+        accessTokenKey: ACCESS_TOKEN_KEY,
+        refreshTokenKey: REFRESH_TOKEN_KEY,
+      });
     }
   }
 
