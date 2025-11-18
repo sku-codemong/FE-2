@@ -829,6 +829,14 @@ async function apiRequest<T>(
   }
 
   const text = await response.text();
+  
+  // 디버깅: 로그인 응답의 경우 raw 텍스트와 헤더 확인
+  if (endpoint === '/api/auth/login') {
+    console.log('[API] Login response raw text:', text);
+    console.log('[API] Login response status:', response.status);
+    console.log('[API] Login response headers:', Object.fromEntries(response.headers.entries()));
+  }
+  
   let payload: any = null;
   if (text) {
     try {
@@ -869,6 +877,11 @@ async function realLoginImpl(email: string, password: string): Promise<User> {
     retry: false,
   });
   
+  // 디버깅: 로그인 응답 전체 구조 확인
+  console.log('[Login] Full response payload:', JSON.stringify(payload, null, 2));
+  console.log('[Login] Payload keys:', payload ? Object.keys(payload) : 'no payload');
+  console.log('[Login] Payload type:', typeof payload);
+  
   // 응답 바디에서 accessToken 추출 및 저장
   // processAuthPayload가 applyAuthSideEffects를 호출하여 토큰 저장
   const user = processAuthPayload(payload);
@@ -876,10 +889,31 @@ async function realLoginImpl(email: string, password: string): Promise<User> {
   // 토큰이 제대로 저장되었는지 확인
   const storedToken = getStoredAccessToken();
   if (!storedToken) {
-    console.error('[Login] WARNING: Access token was not stored after login!');
-    console.error('[Login] Response payload:', payload);
+    console.error('[Login] ERROR: Access token was not stored after login!');
+    console.error('[Login] Response payload structure:', payload);
+    console.error('[Login] Attempting to extract token manually...');
+    
+    // 수동으로 토큰 추출 시도
+    const { accessToken, refreshToken } = extractTokens(payload);
+    console.error('[Login] Extracted tokens:', { 
+      hasAccessToken: !!accessToken, 
+      hasRefreshToken: !!refreshToken,
+      accessTokenValue: accessToken ? accessToken.substring(0, 20) + '...' : null
+    });
+    
+    // 토큰이 추출되었지만 저장되지 않은 경우 다시 저장 시도
+    if (accessToken) {
+      console.log('[Login] Retrying token storage...');
+      updateStoredTokens(accessToken, refreshToken ?? null);
+      const retryStored = getStoredAccessToken();
+      if (retryStored) {
+        console.log('[Login] Token stored successfully on retry');
+      } else {
+        console.error('[Login] Token storage failed even on retry!');
+      }
+    }
   } else {
-    console.log('[Login] Access token stored successfully');
+    console.log('[Login] Access token stored successfully:', storedToken.substring(0, 20) + '...');
   }
   
   return user;
