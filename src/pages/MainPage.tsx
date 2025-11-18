@@ -39,7 +39,7 @@ export function MainPage({ userId }: MainPageProps) {
 
   const loadData = async () => {
     try {
-      const subjectsData = await api.getSubjects(); // includeArchived=true로 모든 과목 가져오기
+      const subjectsData = await api.getSubjects(true); // includeArchived=true로 모든 과목 가져오기
       setAllSubjects(subjectsData);
 
       // 오늘 학습 시간 계산 (초 단위로 합산)
@@ -152,7 +152,7 @@ export function MainPage({ userId }: MainPageProps) {
         await Promise.all(updatePromises);
         
         // 4. 과목 데이터 다시 로드하여 업데이트된 targetDailyMin 반영
-        const updatedSubjects = await api.getSubjects();
+        const updatedSubjects = await api.getSubjects(true); // includeArchived=true로 모든 과목 가져오기
         setAllSubjects(updatedSubjects);
         // 오늘 분배 완료 기록 (오늘만 목표 표시)
         localStorage.setItem('dailyAllocationDate', formatLocalYYYYMMDD(new Date()));
