@@ -241,6 +241,21 @@ export function MainPage({ userId }: MainPageProps) {
                     API URL: {apiBaseUrl || '(설정되지 않음)'}
                   </p>
                 )}
+                {error.includes('Missing access token') && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-yellow-800 text-xs font-medium mb-1">해결 방법:</p>
+                    <p className="text-yellow-700 text-xs">1. 로그아웃 후 다시 로그인해주세요</p>
+                    <p className="text-yellow-700 text-xs">2. 브라우저 캐시를 삭제하고 다시 시도해주세요</p>
+                    <button
+                      onClick={() => {
+                        window.location.href = '/login';
+                      }}
+                      className="mt-2 text-xs text-yellow-800 underline hover:text-yellow-900"
+                    >
+                      로그인 페이지로 이동
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     setError(null);

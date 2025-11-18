@@ -38,6 +38,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     
     try {
       const user = await api.login(email, password);
+      
+      // 모바일 디버깅: 로그인 후 토큰 확인
+      const { getStoredAccessToken } = await import('../services/api');
+      const accessToken = getStoredAccessToken();
+      
+      if (!accessToken) {
+        toast.error('로그인은 성공했지만 인증 토큰을 저장하지 못했습니다. 다시 시도해주세요.');
+        return;
+      }
 
       // 백엔드에서 is_completed가 false로 넘어오면 프로필 설정 다이얼로그 표시
       // isCompleted가 false이거나 undefined이거나, 필수 정보가 없으면 프로필 설정 필요
