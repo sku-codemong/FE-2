@@ -20,6 +20,8 @@ export function MainPage({ userId }: MainPageProps) {
   const [availableMinutes, setAvailableMinutes] = useState(180); // 기본 3시간
   const [allocating, setAllocating] = useState(false);
   const [recommending, setRecommending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
 
   const formatLocalYYYYMMDD = (d: Date) => {
     const y = d.getFullYear();
@@ -34,6 +36,19 @@ export function MainPage({ userId }: MainPageProps) {
   );
 
   useEffect(() => {
+    // API_BASE_URL 확인 (모바일 디버깅용)
+    const checkApiUrl = () => {
+      try {
+        const url = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
+        setApiBaseUrl(url);
+        if (!url) {
+          setError('API 서버 URL이 설정되지 않았습니다. 환경 변수를 확인해주세요.');
+        }
+      } catch (e) {
+        console.error('API URL 확인 실패:', e);
+      }
+    };
+    checkApiUrl();
     loadData();
   }, []);
 
@@ -80,6 +95,7 @@ export function MainPage({ userId }: MainPageProps) {
 
       setDailyProgress(progressMap);
       setDailyProgressSeconds(progressSecondsMap); // 초 단위 데이터 저장
+      setError(null); // 성공 시 에러 초기화
     } catch (error: any) {
       console.error('[MainPage] Error loading data:', error);
       console.error('[MainPage] Error details:', {
@@ -87,7 +103,9 @@ export function MainPage({ userId }: MainPageProps) {
         stack: error?.stack,
         name: error?.name,
       });
-      toast.error(`데이터를 불러오는데 실패했습니다: ${error?.message || '알 수 없는 오류'}`);
+      const errorMsg = error?.message || '알 수 없는 오류';
+      setError(`데이터 로드 실패: ${errorMsg}`);
+      toast.error(`데이터를 불러오는데 실패했습니다: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -210,6 +228,33 @@ export function MainPage({ userId }: MainPageProps) {
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-[542px] mx-auto">
+        {/* 에러 표시 (모바일 디버깅용) */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <span className="text-red-600 text-lg">⚠️</span>
+              <div className="flex-1">
+                <p className="text-red-800 text-sm font-medium mb-1">오류 발생</p>
+                <p className="text-red-700 text-xs break-words">{error}</p>
+                {apiBaseUrl && (
+                  <p className="text-red-600 text-xs mt-2">
+                    API URL: {apiBaseUrl || '(설정되지 않음)'}
+                  </p>
+                )}
+                <button
+                  onClick={() => {
+                    setError(null);
+                    loadData();
+                  }}
+                  className="mt-2 text-xs text-red-600 underline hover:text-red-800"
+                >
+                  다시 시도
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0 mb-4">

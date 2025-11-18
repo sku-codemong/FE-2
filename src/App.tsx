@@ -18,6 +18,7 @@ import { api, clearAuthTokens, type User } from './services/api';
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -28,6 +29,7 @@ function App() {
         console.log('[App] profileImageUrl:', profile.profileImageUrl);
         setUser(profile);
         localStorage.setItem('user', JSON.stringify(profile));
+        setInitError(null); // 성공 시 에러 초기화
       } catch (error: any) {
         console.error('[App] Error initializing user:', error);
         console.error('[App] Error details:', {
@@ -35,6 +37,8 @@ function App() {
           stack: error?.stack,
           name: error?.name,
         });
+        const errorMsg = error?.message || '알 수 없는 오류';
+        setInitError(`사용자 정보 로드 실패: ${errorMsg}`);
         clearAuthTokens();
         localStorage.removeItem('user');
         setUser(null);
@@ -91,6 +95,33 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 초기화 에러 표시 (모바일 디버깅용) */}
+      {initError && (
+        <div className="bg-red-50 border-b border-red-200 p-3 sm:p-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-start gap-2">
+              <span className="text-red-600 text-lg">⚠️</span>
+              <div className="flex-1">
+                <p className="text-red-800 text-sm font-medium mb-1">초기화 오류</p>
+                <p className="text-red-700 text-xs break-words">{initError}</p>
+                <p className="text-red-600 text-xs mt-2">
+                  API URL: {(typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '(설정되지 않음)'}
+                </p>
+                <button
+                  onClick={() => {
+                    setInitError(null);
+                    window.location.reload();
+                  }}
+                  className="mt-2 text-xs text-red-600 underline hover:text-red-800"
+                >
+                  페이지 새로고침
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {user && <Navbar user={user} onLogout={handleLogout} />}
 
       <Routes>
