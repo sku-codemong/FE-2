@@ -845,6 +845,13 @@ async function apiRequest<T>(
   }
 
   const text = await response.text();
+  
+  // 디버깅: 로그인 응답의 경우 raw 텍스트도 확인
+  if (endpoint === '/api/auth/login' && import.meta.env?.DEV) {
+    console.log('[API] Login response raw text:', text);
+    console.log('[API] Login response headers:', Object.fromEntries(response.headers.entries()));
+  }
+  
   let payload: any = null;
   if (text) {
     try {
@@ -876,13 +883,67 @@ async function apiRequest<T>(
 
 
 
+// 쿠키에서 토큰 읽기
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()?.split(';').shift() || null;
+  }
+  return null;
+}
+
 async function realLoginImpl(email: string, password: string): Promise<User> {
+  // 로그인 요청 전 쿠키 초기화 (디버깅용)
+  console.log('[Login] Cookies before login:', document.cookie);
+  
   const payload = await apiRequest<any>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
     skipAuth: true,
     retry: false,
   });
+  
+  // 디버깅: 로그인 응답 전체 구조 확인
+  console.log('[Login] Full response payload:', JSON.stringify(payload, null, 2));
+  console.log('[Login] Payload keys:', payload ? Object.keys(payload) : 'no payload');
+  console.log('[Login] Cookies after login:', document.cookie);
+  
+  // 응답 바디에 토큰이 없으면 쿠키에서 읽기 시도
+  const { accessToken: bodyAccessToken, refreshToken: bodyRefreshToken } = extractTokens(payload);
+  
+  if (!bodyAccessToken && !bodyRefreshToken) {
+    console.log('[Login] No tokens in response body, checking cookies...');
+    
+    // 쿠키에서 토큰 찾기 (일반적인 쿠키 이름들 시도)
+    const cookieAccessToken = 
+      getCookie('at') || 
+      getCookie('accessToken') || 
+      getCookie('access_token') ||
+      getCookie('token') ||
+      getCookie('auth_token');
+      
+    const cookieRefreshToken = 
+      getCookie('rt') || 
+      getCookie('refreshToken') || 
+      getCookie('refresh_token');
+    
+    console.log('[Login] Tokens from cookies:', {
+      hasAccessToken: !!cookieAccessToken,
+      hasRefreshToken: !!cookieRefreshToken,
+      cookieNames: document.cookie.split(';').map(c => c.trim().split('=')[0]),
+    });
+    
+    // 쿠키에서 토큰을 찾았으면 저장
+    if (cookieAccessToken || cookieRefreshToken) {
+      updateStoredTokens(cookieAccessToken ?? null, cookieRefreshToken ?? null);
+      console.log('[Login] Tokens stored from cookies');
+    } else {
+      console.warn('[Login] No tokens found in response body or cookies!');
+    }
+  }
+  
   return processAuthPayload(payload);
 }
 
