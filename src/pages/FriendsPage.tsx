@@ -306,68 +306,71 @@ export function FriendsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 pb-6 sm:pb-8">
       {/* 헤더 */}
-      <div className="bg-white border-b sticky top-[73px] z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9810fa] to-[#2b7fff] flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
+      <div className="bg-white border-b sticky top-[57px] sm:top-[73px] z-40">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#9810fa] to-[#2b7fff] flex items-center justify-center">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-[20px] text-neutral-950">친구 목록</h1>
-                <p className="text-[14px] text-[#6a7282]">
+                <h1 className="text-[18px] sm:text-[20px] text-neutral-950">친구 목록</h1>
+                <p className="text-[12px] sm:text-[14px] text-[#6a7282]">
                   총 {friends.length}명의 친구
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               <Button
                 onClick={() => openRequestsDialog('incoming')}
                 variant="outline"
-                className="text-[#9810fa] border-[#9810fa]"
+                className="text-[#9810fa] border-[#9810fa] text-[11px] sm:text-sm px-2 sm:px-3 h-8 sm:h-9"
               >
-                받은 요청
+                <span className="hidden sm:inline">받은 요청</span>
+                <span className="sm:hidden">받은</span>
               </Button>
               <Button
                 onClick={() => openRequestsDialog('outgoing')}
                 variant="outline"
-                className="text-[#9810fa] border-[#9810fa]"
+                className="text-[#9810fa] border-[#9810fa] text-[11px] sm:text-sm px-2 sm:px-3 h-8 sm:h-9"
               >
-                보낸 요청
+                <span className="hidden sm:inline">보낸 요청</span>
+                <span className="sm:hidden">보낸</span>
               </Button>
               <Button
                 onClick={() => setShowAddDialog(true)}
-                className="bg-[#9810fa] hover:bg-[#8610da] text-white"
+                className="bg-[#9810fa] hover:bg-[#8610da] text-white text-[11px] sm:text-sm px-2 sm:px-3 h-8 sm:h-9"
               >
-                <UserPlus className="w-4 h-4 mr-2" />
-                친구 추가
+                <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">친구 추가</span>
+                <span className="sm:hidden">추가</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 pt-6">
+      <div className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-6">
         {/* 상위 3명 랭킹 */}
         {topThree.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5 text-amber-500" />
-              <h2 className="text-[18px] text-neutral-950">주간 TOP 3</h2>
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+              <h2 className="text-[16px] sm:text-[18px] text-neutral-950">주간 TOP 3</h2>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {topThree.map((friend) => {
                 return (
                   <div
                     key={friend.id}
-                    className="bg-white rounded-[16px] border-2 border-[rgba(0,0,0,0.1)] p-6 shadow-sm hover:shadow-md transition-shadow"
+                    className="bg-white rounded-[16px] border-2 border-[rgba(0,0,0,0.1)] p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="flex flex-col items-center text-center">
                       {/* 프로필 이미지 */}
-                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-3 shadow-lg">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-2 sm:mb-3 shadow-lg">
                         {friend.profileImageUrl ? (
                           <img 
                             src={friend.profileImageUrl} 
@@ -390,20 +393,20 @@ export function FriendsPage() {
                       </div>
 
                       {/* 닉네임 */}
-                      <h3 className="text-[16px] text-neutral-950 mb-1">
+                      <h3 className="text-[14px] sm:text-[16px] text-neutral-950 mb-1">
                         {friend.nickname}
                       </h3>
 
                       {/* 아이디 */}
-                      <p className="text-[12px] text-[#6a7282] mb-3">
+                      <p className="text-[11px] sm:text-[12px] text-[#6a7282] mb-2 sm:mb-3">
                         @{friend.userId}
                       </p>
 
                       {/* 학습 시간 */}
-                      <div className="w-full bg-purple-50 rounded-[8px] p-3">
+                      <div className="w-full bg-purple-50 rounded-[8px] p-2 sm:p-3">
                         <div className="flex items-center justify-center gap-2">
-                          <Clock className="w-4 h-4 text-[#9810fa]" />
-                          <span className="text-[14px] text-neutral-950">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-[#9810fa]" />
+                          <span className="text-[12px] sm:text-[14px] text-neutral-950">
                             {formatTime(friend.weeklyStudySeconds)}
                           </span>
                         </div>
@@ -418,7 +421,7 @@ export function FriendsPage() {
 
         {/* 전체 친구 목록 */}
         <div>
-          <h2 className="text-[18px] text-neutral-950 mb-4">전체 친구</h2>
+          <h2 className="text-[16px] sm:text-[18px] text-neutral-950 mb-3 sm:mb-4">전체 친구</h2>
           
           {friends.length === 0 ? (
             <div className="bg-white rounded-[16px] border border-[rgba(0,0,0,0.1)] p-12 text-center">

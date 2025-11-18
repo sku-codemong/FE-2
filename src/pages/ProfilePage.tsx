@@ -311,21 +311,21 @@ export function ProfilePage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-[1120px] mx-auto p-4">
+      <div className="max-w-[1120px] mx-auto p-3 sm:p-4">
         <Link to="/">
-          <Button variant="ghost" className="mb-4">
+          <Button variant="ghost" className="mb-3 sm:mb-4 text-sm sm:text-base">
             <ArrowLeft className="w-4 h-4 mr-2" />
             돌아가기
           </Button>
         </Link>
         
-        <div className="box-border content-stretch flex flex-col gap-[32px] items-start pb-0 pt-[32px] px-[16px]">
+        <div className="box-border content-stretch flex flex-col gap-4 sm:gap-[32px] items-start pb-0 pt-4 sm:pt-[32px] px-2 sm:px-[16px]">
           {/* 헤더 */}
-          <div className="h-[24px] w-full flex items-center justify-between">
-            <p className="font-normal leading-[24px] text-[16px] text-neutral-950">프로필</p>
+          <div className="h-auto sm:h-[24px] w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+            <p className="font-normal leading-[24px] text-[18px] sm:text-[16px] text-neutral-950">프로필</p>
             {user && !viewingOther && (
               <Link to={`/profile/edit/${user.id}`}>
-                <button className="bg-white border border-[rgba(0,0,0,0.1)] rounded-[8px] px-4 h-[36px] text-[14px] text-neutral-950 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <button className="bg-white border border-[rgba(0,0,0,0.1)] rounded-[8px] px-3 sm:px-4 h-[36px] text-[12px] sm:text-[14px] text-neutral-950 hover:bg-gray-50 transition-colors flex items-center gap-2 w-full sm:w-auto justify-center">
                   <Edit className="w-4 h-4" />
                   프로필 수정
                 </button>
@@ -335,10 +335,10 @@ export function ProfilePage() {
 
           {/* 사용자 정보 */}
           {user && (
-            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-6 w-full">
+            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-4 sm:p-6 w-full">
               {/* 프로필 이미지 */}
-              <div className="flex justify-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+              <div className="flex justify-center mb-4 sm:mb-6">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                   {user.profileImageUrl ? (
                     <img 
                       src={user.profileImageUrl} 
@@ -391,42 +391,42 @@ export function ProfilePage() {
 
           {/* 다른 사용자 조회 시에는 통계 블록 숨김 */}
           {!viewingOther && (
-          <div className="h-[158px] w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="h-auto sm:h-[158px] w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {/* 총 학습 시간 */}
-            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[25px] flex flex-col gap-[32px]">
+            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-4 sm:p-[25px] flex flex-col gap-4 sm:gap-[32px]">
               <div className="flex gap-[12px] items-center">
-                <div className="bg-purple-100 rounded-[10px] size-[40px] flex items-center justify-center">
-                  <Clock className="size-[20px] text-[#9810FA]" />
+                <div className="bg-purple-100 rounded-[10px] size-8 sm:size-[40px] flex items-center justify-center">
+                  <Clock className="size-4 sm:size-[20px] text-[#9810FA]" />
                 </div>
-                <p className="font-normal leading-[24px] text-[#4a5565] text-[16px]">총 학습 시간</p>
+                <p className="font-normal leading-[24px] text-[#4a5565] text-[14px] sm:text-[16px]">총 학습 시간</p>
               </div>
-              <p className="font-normal leading-[36px] text-[30px] text-neutral-950">
+              <p className="font-normal leading-[28px] sm:leading-[36px] text-[24px] sm:text-[30px] text-neutral-950">
                 {totalHours > 0 ? `${totalHours}시간 ` : ''}{totalMins}분 {totalSecs}초
               </p>
             </div>
 
             {/* 이번 주 학습 */}
-            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[25px] flex flex-col gap-[32px]">
+            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-4 sm:p-[25px] flex flex-col gap-4 sm:gap-[32px]">
               <div className="flex gap-[12px] items-center">
-                <div className="bg-blue-100 rounded-[10px] size-[40px] flex items-center justify-center">
-                  <Calendar className="size-[20px] text-[#155DFC]" />
+                <div className="bg-blue-100 rounded-[10px] size-8 sm:size-[40px] flex items-center justify-center">
+                  <Calendar className="size-4 sm:size-[20px] text-[#155DFC]" />
                 </div>
-                <p className="font-normal leading-[24px] text-[#4a5565] text-[16px]">이번 주 학습</p>
+                <p className="font-normal leading-[24px] text-[#4a5565] text-[14px] sm:text-[16px]">이번 주 학습</p>
               </div>
-              <p className="font-normal leading-[36px] text-[30px] text-neutral-950">
+              <p className="font-normal leading-[28px] sm:leading-[36px] text-[24px] sm:text-[30px] text-neutral-950">
                 {weekHours > 0 ? `${weekHours}시간 ` : ''}{weekMins}분 {weekSecs}초
               </p>
             </div>
 
             {/* 평균 세션 */}
-            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[25px] flex flex-col gap-[32px]">
+            <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-4 sm:p-[25px] flex flex-col gap-4 sm:gap-[32px]">
               <div className="flex gap-[12px] items-center">
-                <div className="bg-green-100 rounded-[10px] size-[40px] flex items-center justify-center">
-                  <TrendingUp className="size-[20px] text-[#00A63E]" />
+                <div className="bg-green-100 rounded-[10px] size-8 sm:size-[40px] flex items-center justify-center">
+                  <TrendingUp className="size-4 sm:size-[20px] text-[#00A63E]" />
                 </div>
-                <p className="font-normal leading-[24px] text-[#4a5565] text-[16px]">평균 세션</p>
+                <p className="font-normal leading-[24px] text-[#4a5565] text-[14px] sm:text-[16px]">평균 세션</p>
               </div>
-              <p className="font-normal leading-[36px] text-[30px] text-neutral-950">
+              <p className="font-normal leading-[28px] sm:leading-[36px] text-[24px] sm:text-[30px] text-neutral-950">
                 {avgHours > 0 ? `${avgHours}시간 ` : ''}{avgMins}분 {avgSecs}초
               </p>
             </div>

@@ -16,6 +16,16 @@ export function WeeklyReportPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     loadReport();
@@ -158,11 +168,39 @@ export function WeeklyReportPage() {
     };
   });
 
-  const pieChartData = report?.subjects.map(s => ({
-    name: s.subjectName,
-    value: s.minutes,
-    color: s.color
-  })) || [];
+  // 세션 데이터에서 과목별 초 단위로 계산하여 pieChartData 생성
+  const pieChartData = report?.subjects
+    .map(s => {
+      // 세션 데이터에서 정확한 초 단위 계산
+      const subjectSeconds = sessions
+        .filter(session => 
+          String(session.subjectId) === String(s.subjectId) &&
+          (session.status === 'completed' || session.status === 'stopped')
+        )
+        .reduce((sum, session) => {
+          let durationSec = 0;
+          if (session.endTime) {
+            const start = new Date(session.startTime).getTime();
+            const end = new Date(session.endTime).getTime();
+            durationSec = Math.floor((end - start) / 1000);
+          } else {
+            durationSec = (session.duration || 0) * 60;
+          }
+          return sum + durationSec;
+        }, 0);
+      
+      return {
+        name: s.subjectName,
+        value: subjectSeconds, // 초 단위로 사용
+        color: s.color
+      };
+    })
+    .filter(item => item.value > 0) // 0보다 큰 값만 표시
+    || [];
+  
+  // 디버깅: pieChartData 확인
+  console.log('[WeeklyReport] pieChartData:', pieChartData);
+  console.log('[WeeklyReport] report?.subjects:', report?.subjects);
 
   // 총 학습 시간을 초 단위로 계산 (세션 데이터에서 직접 계산)
   const totalSeconds = sessions
@@ -205,15 +243,15 @@ export function WeeklyReportPage() {
   const studyDays = dailyChartData.filter(d => d.minutes > 0).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-[1104px] mx-auto">
         {/* Back Button */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-3 h-[36px] px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-6"
+          className="flex items-center gap-2 sm:gap-3 h-[36px] px-2 sm:px-3 rounded-[8px] hover:bg-gray-100 transition-colors mb-4 sm:mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-[14px] text-neutral-950">돌아가기</span>
+          <span className="text-[12px] sm:text-[14px] text-neutral-950">돌아가기</span>
         </button>
 
         {loading ? (
@@ -223,16 +261,16 @@ export function WeeklyReportPage() {
         ) : (
           <>
             {/* Header Card */}
-            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-[32px] mb-[24px]">
-              <div className="flex items-center justify-between mb-[24px]">
-                <div>
-                  <h1 className="text-[24px] text-neutral-950 mb-[8px]">주간 학습 리포트</h1>
-                  <p className="text-[16px] text-[#4a5565]">{formatWeekRange()}</p>
+            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-4 sm:p-[32px] mb-4 sm:mb-[24px]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-[24px]">
+                <div className="flex-1">
+                  <h1 className="text-[18px] sm:text-[24px] text-neutral-950 mb-2 sm:mb-[8px]">주간 학습 리포트</h1>
+                  <p className="text-[12px] sm:text-[16px] text-[#4a5565] break-words">{formatWeekRange()}</p>
                 </div>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="cursor-pointer hover:opacity-70 transition-opacity">
-                      <Calendar className="w-[32px] h-[32px] text-[#9810fa]" strokeWidth={2.67} />
+                    <button className="cursor-pointer hover:opacity-70 transition-opacity self-start sm:self-auto">
+                      <Calendar className="w-6 h-6 sm:w-[32px] sm:h-[32px] text-[#9810fa]" strokeWidth={2.67} />
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-white border border-gray-200 shadow-lg" align="end">
@@ -289,49 +327,49 @@ export function WeeklyReportPage() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-4 gap-[16px]">
-                <div className="bg-purple-50 rounded-[14px] p-[16px]">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <Clock className="w-[20px] h-[20px] text-[#9810fa]" strokeWidth={1.67} />
-                    <span className="text-[16px] text-[#4a5565]">총 학습 시간</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-[16px]">
+                <div className="bg-purple-50 rounded-[14px] p-3 sm:p-[16px]">
+                  <div className="flex items-center gap-1 sm:gap-[8px] mb-1 sm:mb-[8px]">
+                    <Clock className="w-4 h-4 sm:w-[20px] sm:h-[20px] text-[#9810fa]" strokeWidth={1.67} />
+                    <span className="text-[11px] sm:text-[16px] text-[#4a5565]">총 학습 시간</span>
                   </div>
-                  <p className="text-[16px] text-neutral-950">
+                  <p className="text-[12px] sm:text-[16px] text-neutral-950 break-words">
                     {totalHours > 0 ? `${totalHours}시간 ` : ''}{totalMins}분 {totalSecs}초
                   </p>
                 </div>
 
-                <div className="bg-blue-50 rounded-[14px] p-[16px]">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <TrendingUp className="w-[20px] h-[20px] text-[#155dfc]" strokeWidth={1.67} />
-                    <span className="text-[16px] text-[#4a5565]">일일 평균</span>
+                <div className="bg-blue-50 rounded-[14px] p-3 sm:p-[16px]">
+                  <div className="flex items-center gap-1 sm:gap-[8px] mb-1 sm:mb-[8px]">
+                    <TrendingUp className="w-4 h-4 sm:w-[20px] sm:h-[20px] text-[#155dfc]" strokeWidth={1.67} />
+                    <span className="text-[11px] sm:text-[16px] text-[#4a5565]">일일 평균</span>
                   </div>
-                  <p className="text-[16px] text-neutral-950">
+                  <p className="text-[12px] sm:text-[16px] text-neutral-950 break-words">
                     {avgDailyHours > 0 ? `${avgDailyHours}시간 ` : ''}{avgDailyMins}분 {avgDailySecs}초
                   </p>
                 </div>
 
-                <div className="bg-emerald-50 rounded-[14px] p-[16px]">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <Award className="w-[20px] h-[20px] text-[#009966]" strokeWidth={1.67} />
-                    <span className="text-[16px] text-[#4a5565]">목표 달성률</span>
+                <div className="bg-emerald-50 rounded-[14px] p-3 sm:p-[16px]">
+                  <div className="flex items-center gap-1 sm:gap-[8px] mb-1 sm:mb-[8px]">
+                    <Award className="w-4 h-4 sm:w-[20px] sm:h-[20px] text-[#009966]" strokeWidth={1.67} />
+                    <span className="text-[11px] sm:text-[16px] text-[#4a5565]">목표 달성률</span>
                   </div>
-                  <p className="text-[16px] text-neutral-950">{achievementRate}%</p>
+                  <p className="text-[12px] sm:text-[16px] text-neutral-950">{achievementRate}%</p>
                 </div>
 
-                <div className="bg-amber-50 rounded-[14px] p-[16px]">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <CalendarDays className="w-[20px] h-[20px] text-[#e17100]" strokeWidth={1.67} />
-                    <span className="text-[16px] text-[#4a5565]">학습일</span>
+                <div className="bg-amber-50 rounded-[14px] p-3 sm:p-[16px]">
+                  <div className="flex items-center gap-1 sm:gap-[8px] mb-1 sm:mb-[8px]">
+                    <CalendarDays className="w-4 h-4 sm:w-[20px] sm:h-[20px] text-[#e17100]" strokeWidth={1.67} />
+                    <span className="text-[11px] sm:text-[16px] text-[#4a5565]">학습일</span>
                   </div>
-                  <p className="text-[16px] text-neutral-950">{studyDays}일 / 7일</p>
+                  <p className="text-[12px] sm:text-[16px] text-neutral-950">{studyDays}일 / 7일</p>
                 </div>
               </div>
             </div>
 
             {/* Daily Chart */}
-            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-[32px] mb-[24px]">
-              <h2 className="text-[20px] text-neutral-950 mb-[24px]">일별 학습 시간</h2>
-              <ResponsiveContainer width="100%" height={300}>
+            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-4 sm:p-[32px] mb-4 sm:mb-[24px]">
+              <h2 className="text-[16px] sm:text-[20px] text-neutral-950 mb-4 sm:mb-[24px]">일별 학습 시간</h2>
+              <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
                 <BarChart data={dailyChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="date" stroke="#6A7282" style={{ fontSize: '12px' }} />
@@ -343,77 +381,98 @@ export function WeeklyReportPage() {
             </div>
 
             {/* Subject Distribution */}
-            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-[32px]">
-              <h2 className="text-[20px] text-neutral-950 mb-[24px]">과목별 학습 시간 분포</h2>
+            <div className="bg-white rounded-[16px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-4 sm:p-[32px]">
+              <h2 className="text-[16px] sm:text-[20px] text-neutral-950 mb-4 sm:mb-[24px]">과목별 학습 시간 분포</h2>
               
-              <div className="grid grid-cols-2 gap-[32px]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-[32px]">
                 {/* Pie Chart */}
-                <div className="flex items-center justify-center">
-                  {pieChartData.length > 0 && (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
+                <div className="flex items-center justify-center min-h-[250px] sm:min-h-[300px] w-full">
+                  {pieChartData.length > 0 ? (
+                    <div className="w-full" style={{ height: isMobile ? '250px' : '300px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
                         <Pie
                           data={pieChartData}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={100}
+                          labelLine={true}
+                          label={({ name, percent }) => {
+                            const percentValue = (percent * 100).toFixed(0);
+                            // 모바일에서도 이름 표시 (짧게)
+                            if (isMobile) {
+                              // 모바일: 이름 첫 글자만 또는 짧은 이름
+                              const shortName = name.length > 4 ? name.substring(0, 4) + '...' : name;
+                              return `${shortName}\n${percentValue}%`;
+                            }
+                            return `${name} ${percentValue}%`;
+                          }}
+                          outerRadius={isMobile ? 70 : 100}
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {pieChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
+                            {pieChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="text-center text-[#6a7282] text-sm">
+                      데이터가 없습니다
+                    </div>
                   )}
                 </div>
 
                 {/* Subject List */}
-                <div className="flex flex-col gap-[16px]">
-                  {report.subjects.map((subject, index) => {
-                    // 세션 데이터에서 정확한 초 단위 계산
-                    const subjectSeconds = sessions
-                      .filter(s => 
-                        String(s.subjectId) === String(subject.subjectId) &&
-                        (s.status === 'completed' || s.status === 'stopped')
-                      )
-                      .reduce((sum, s) => {
-                        let durationSec = 0;
-                        if (s.endTime) {
-                          const start = new Date(s.startTime).getTime();
-                          const end = new Date(s.endTime).getTime();
-                          durationSec = Math.floor((end - start) / 1000);
-                        } else {
-                          durationSec = (s.duration || 0) * 60;
-                        }
-                        return sum + durationSec;
-                      }, 0);
-                    
-                    const hours = Math.floor(subjectSeconds / 3600);
-                    const mins = Math.floor((subjectSeconds % 3600) / 60);
-                    const secs = subjectSeconds % 60;
-                    
-                    return (
-                      <div key={index} className="bg-gray-50 rounded-[14px] p-[16px] flex items-center justify-between">
-                        <div className="flex items-center gap-[12px]">
-                          <div
-                            className="w-[16px] h-[16px] rounded-full"
-                            style={{ backgroundColor: subject.color }}
-                          />
-                          <span className="text-[16px] text-neutral-950">{subject.subjectName}</span>
+                <div className="flex flex-col gap-3 sm:gap-[16px]">
+                  {report.subjects.length > 0 ? (
+                    report.subjects.map((subject, index) => {
+                      // 세션 데이터에서 정확한 초 단위 계산
+                      const subjectSeconds = sessions
+                        .filter(s => 
+                          String(s.subjectId) === String(subject.subjectId) &&
+                          (s.status === 'completed' || s.status === 'stopped')
+                        )
+                        .reduce((sum, s) => {
+                          let durationSec = 0;
+                          if (s.endTime) {
+                            const start = new Date(s.startTime).getTime();
+                            const end = new Date(s.endTime).getTime();
+                            durationSec = Math.floor((end - start) / 1000);
+                          } else {
+                            durationSec = (s.duration || 0) * 60;
+                          }
+                          return sum + durationSec;
+                        }, 0);
+                      
+                      const hours = Math.floor(subjectSeconds / 3600);
+                      const mins = Math.floor((subjectSeconds % 3600) / 60);
+                      const secs = subjectSeconds % 60;
+                      
+                      return (
+                        <div key={index} className="bg-gray-50 rounded-[14px] p-3 sm:p-[16px] flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 sm:gap-[12px] min-w-0 flex-1">
+                            <div
+                              className="w-3 h-3 sm:w-[16px] sm:h-[16px] rounded-full flex-shrink-0"
+                              style={{ backgroundColor: subject.color }}
+                            />
+                            <span className="text-[13px] sm:text-[16px] text-neutral-950 truncate">{subject.subjectName}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-[12px] sm:text-[16px] text-neutral-950 whitespace-nowrap">
+                              {hours > 0 ? `${hours}시간 ` : ''}{mins}분 {secs}초
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-[16px] text-neutral-950">
-                            {hours > 0 ? `${hours}시간 ` : ''}{mins}분 {secs}초
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  ) : (
+                    <div className="text-center text-[#6a7282] text-sm py-8">
+                      과목 데이터가 없습니다
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

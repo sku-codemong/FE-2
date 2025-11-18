@@ -273,14 +273,14 @@ export function Navbar({ user, onLogout }: NavbarProps) {
 
   return (
     <nav className="border-b bg-white sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-purple-600" />
-          <span className="text-purple-600">Study Timer</span>
+      <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-1 sm:gap-2">
+          <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+          <span className="text-purple-600 text-sm sm:text-base font-medium">Study Timer</span>
         </Link>
         
         {user && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Link to={`/friends/${user.id}`}>
               <Button variant="ghost" size="sm">
                 <Users className="w-4 h-4" />
@@ -302,7 +302,7 @@ export function Navbar({ user, onLogout }: NavbarProps) {
                   )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-[380px] p-0 bg-white border border-gray-200 shadow-xl rounded-lg" align="end" sideOffset={8}>
+              <PopoverContent className="w-[90vw] max-w-[380px] p-0 bg-white border border-gray-200 shadow-xl rounded-lg" align="end" sideOffset={8}>
                 <div className="p-4 border-b">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[16px] text-neutral-950">알림</h3>
@@ -348,8 +348,8 @@ export function Navbar({ user, onLogout }: NavbarProps) {
             </Popover>
 
             <Link to={`/profile/${user.id}`}>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+              <Button variant="ghost" size="sm" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                   {user.profileImageUrl && user.profileImageUrl.trim() !== '' && !imageError ? (
                     <img 
                       src={user.profileImageUrl} 
@@ -366,17 +366,17 @@ export function Navbar({ user, onLogout }: NavbarProps) {
                       }}
                     />
                   ) : (
-                    <span className="text-xs text-gray-500">
+                    <span className="text-[10px] sm:text-xs text-gray-500">
                       {(user.nickname || user.email || 'U').charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
-                {user.nickname || user.name || user.email}
+                <span className="hidden sm:inline">{user.nickname || user.name || user.email}</span>
               </Button>
             </Link>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              로그아웃
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="px-2 sm:px-3">
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">로그아웃</span>
             </Button>
           </div>
         )}

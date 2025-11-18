@@ -198,22 +198,22 @@ export function MainPage({ userId }: MainPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-[542px] mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-[24px] text-neutral-950 mb-2">내 학습 현황</h1>
-              <p className="text-[16px] text-[#4a5565]">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0 mb-4">
+            <div className="flex-1">
+              <h1 className="text-[20px] sm:text-[24px] text-neutral-950 mb-2">내 학습 현황</h1>
+              <p className="text-[14px] sm:text-[16px] text-[#4a5565]">
                 오늘 학습 시간: {totalHours > 0 ? `${totalHours}시간 ` : ''}{remainingMinutes}분 {remainingSeconds}초
               </p>
               {totalDailyTarget > 0 && (
                 <>
-                  <p className="text-[14px] text-[#6a7282] mt-1">
+                  <p className="text-[12px] sm:text-[14px] text-[#6a7282] mt-1">
                     남은 시간: {remainingHours > 0 ? `${remainingHours}시간 ` : ''}{remainingMins}분{remainingSecs > 0 ? ` ${remainingSecs}초` : ''}
                   </p>
-                  <p className="text-[14px] text-[#6a7282] mt-1">
+                  <p className="text-[12px] sm:text-[14px] text-[#6a7282] mt-1">
                     오늘 목표: {dailyTargetHours > 0 ? `${dailyTargetHours}시간 ` : ''}{dailyTargetMinutes}분
                   </p>
                 </>
@@ -222,15 +222,17 @@ export function MainPage({ userId }: MainPageProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAllocationDialog(true)}
-                className="bg-white border-2 border-[#9810fa] text-[#9810fa] hover:bg-purple-50 rounded-[8px] px-4 h-[36px] text-[14px] flex items-center gap-2 transition-colors"
+                className="bg-white border-2 border-[#9810fa] text-[#9810fa] hover:bg-purple-50 rounded-[8px] px-3 sm:px-4 h-[36px] text-[12px] sm:text-[14px] flex items-center gap-1 sm:gap-2 transition-colors"
               >
-                <Sparkles className="w-4 h-4" />
-                일일 분배
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">일일 분배</span>
+                <span className="sm:hidden">분배</span>
               </button>
               <Link to={`/subject/create/${userId}`}>
-                <button className="bg-[#9810fa] hover:bg-[#8610da] text-white rounded-[8px] px-4 h-[36px] text-[14px] flex items-center gap-2 transition-colors">
-                  <Plus className="w-4 h-4" />
-                  과목 추가
+                <button className="bg-[#9810fa] hover:bg-[#8610da] text-white rounded-[8px] px-3 sm:px-4 h-[36px] text-[12px] sm:text-[14px] flex items-center gap-1 sm:gap-2 transition-colors">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">과목 추가</span>
+                  <span className="sm:hidden">추가</span>
                 </button>
               </Link>
             </div>
@@ -240,7 +242,7 @@ export function MainPage({ userId }: MainPageProps) {
           <div className="flex gap-2 mt-4">
             <button
               onClick={() => setActiveTab('active')}
-              className={`flex-1 rounded-[8px] h-[36px] text-[14px] font-medium transition-colors ${
+              className={`flex-1 rounded-[8px] h-[36px] text-[12px] sm:text-[14px] font-medium transition-colors ${
                 activeTab === 'active'
                   ? 'bg-[#9810fa] text-white'
                   : 'bg-white border border-[rgba(0,0,0,0.1)] text-neutral-950 hover:bg-gray-50'
@@ -250,7 +252,7 @@ export function MainPage({ userId }: MainPageProps) {
             </button>
             <button
               onClick={() => setActiveTab('archived')}
-              className={`flex-1 rounded-[8px] h-[36px] text-[14px] font-medium transition-colors ${
+              className={`flex-1 rounded-[8px] h-[36px] text-[12px] sm:text-[14px] font-medium transition-colors ${
                 activeTab === 'archived'
                   ? 'bg-[#9810fa] text-white'
                   : 'bg-white border border-[rgba(0,0,0,0.1)] text-neutral-950 hover:bg-gray-50'
@@ -293,9 +295,9 @@ export function MainPage({ userId }: MainPageProps) {
         )}
 
         {/* Quick Menu */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-8">
-          <h2 className="text-neutral-950 mb-4">빠른 메뉴</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 mt-6 sm:mt-8">
+          <h2 className="text-neutral-950 mb-4 text-[16px] sm:text-[18px]">빠른 메뉴</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             <Link to={`/profile/${userId}`}>
               <button className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors w-full">
                 <div className="bg-[#9810fa] rounded-lg p-2">
