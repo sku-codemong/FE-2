@@ -292,38 +292,17 @@ function getStorage(): Storage | null {
 }
 
 function readToken(key: string): string | null {
-  try {
-    const storage = getStorage();
-    if (!storage) {
-      console.warn('[Token] Storage not available');
-      return null;
-    }
-    return storage.getItem(key);
-  } catch (error: any) {
-    console.error(`[Token] Failed to read ${key}:`, error);
-    return null;
-  }
+  const storage = getStorage();
+  return storage ? storage.getItem(key) : null;
 }
 
 function writeToken(key: string, value: string | null) {
-  try {
-    const storage = getStorage();
-    if (!storage) {
-      console.error('[Token] Storage not available, cannot write token');
-      return;
-    }
-    if (value) {
-      storage.setItem(key, value);
-      console.log(`[Token] Stored ${key} successfully`);
-    } else {
-      storage.removeItem(key);
-      console.log(`[Token] Removed ${key}`);
-    }
-  } catch (error: any) {
-    console.error(`[Token] Failed to write ${key}:`, error);
-    if (error.name === 'QuotaExceededError') {
-      console.error('[Token] Storage quota exceeded - localStorage is full');
-    }
+  const storage = getStorage();
+  if (!storage) return;
+  if (value) {
+    storage.setItem(key, value);
+  } else {
+    storage.removeItem(key);
   }
 }
 
@@ -362,6 +341,7 @@ function extractTokens(payload: any): TokenPair {
     return {};
   }
 
+  // 다양한 응답 구조 지원
   const sources = [
     payload,
     payload?.data,
@@ -369,6 +349,8 @@ function extractTokens(payload: any): TokenPair {
     payload?.tokens,
     payload?.data?.tokens,
     payload?.result?.tokens,
+    payload?.response,
+    payload?.response?.data,
   ];
 
   let accessToken: string | null | undefined;
@@ -376,6 +358,8 @@ function extractTokens(payload: any): TokenPair {
 
   for (const source of sources) {
     if (!source || typeof source !== 'object') continue;
+    
+    // accessToken 찾기 (우선순위: accessToken > access_token > token > idToken > jwt)
     if (accessToken === undefined) {
       accessToken =
         source.accessToken ??
@@ -385,15 +369,26 @@ function extractTokens(payload: any): TokenPair {
         source.jwt ??
         null;
     }
+    
+    // refreshToken 찾기
     if (refreshToken === undefined) {
       refreshToken =
         source.refreshToken ??
         source.refresh_token ??
         null;
     }
+    
+    // 둘 다 찾았으면 중단
     if (accessToken !== undefined && refreshToken !== undefined) {
       break;
     }
+  }
+
+  // accessToken은 필수이므로 찾았는지 확인
+  if (accessToken) {
+    console.log('[Token] Access token extracted successfully');
+  } else {
+    console.warn('[Token] Access token not found in response. Payload structure:', Object.keys(payload || {}));
   }
 
   return { accessToken, refreshToken };
@@ -476,29 +471,21 @@ function normalizeUser(payload: any): User {
 function applyAuthSideEffects(payload: any) {
   const { accessToken, refreshToken } = extractTokens(payload);
   
-  // 디버깅: 토큰 추출 결과 확인
-  console.log('[Auth] Token extraction result:', {
-    hasAccessToken: !!accessToken,
-    hasRefreshToken: !!refreshToken,
-    payloadStructure: payload ? Object.keys(payload) : 'no payload',
-  });
-  
-  if (accessToken !== undefined || refreshToken !== undefined) {
+  // accessToken이 있으면 반드시 저장 (모바일에서 헤더로 사용하기 위해 필수)
+  if (accessToken !== undefined) {
     updateStoredTokens(accessToken ?? null, refreshToken ?? null);
+    console.log('[Auth] Tokens stored. Access token:', accessToken ? 'present' : 'missing');
     
     // 저장 후 확인
-    const storedAccess = getStoredAccessToken();
-    const storedRefresh = getStoredRefreshToken();
-    console.log('[Auth] Tokens stored:', {
-      accessTokenStored: !!storedAccess,
-      refreshTokenStored: !!storedRefresh,
-    });
-    
-    if (accessToken && !storedAccess) {
-      console.error('[Auth] WARNING: Access token was not stored!');
+    const stored = getStoredAccessToken();
+    if (!stored && accessToken) {
+      console.error('[Auth] ERROR: Access token was not stored!');
     }
+  } else if (refreshToken !== undefined) {
+    // refreshToken만 있는 경우도 저장
+    updateStoredTokens(null, refreshToken ?? null);
   } else {
-    console.warn('[Auth] No tokens found in login response. Payload:', payload);
+    console.warn('[Auth] No tokens found in login response');
   }
 }
 
@@ -805,14 +792,11 @@ async function apiRequest<T>(
   if (!skipAuth) {
     const accessToken = getStoredAccessToken();
     if (accessToken) {
+      // 모든 API 요청에 Authorization Bearer 헤더 붙이기 (모바일 iOS 대응)
       requestHeaders.set('Authorization', `Bearer ${accessToken}`);
-      // 디버깅: 헤더가 제대로 붙었는지 확인
-      if (import.meta.env?.DEV) {
-        console.log(`[API] Authorization header attached for: ${endpoint}`);
-      }
     } else {
-      // 모바일 디버깅: 토큰이 없을 때 경고
-      console.warn(`[API] Missing access token for: ${endpoint}`);
+      // 토큰이 없으면 에러 (디버깅용)
+      console.error(`[API] Missing access token for ${endpoint}. Cannot attach Authorization header.`);
     }
   }
 
@@ -845,13 +829,6 @@ async function apiRequest<T>(
   }
 
   const text = await response.text();
-  
-  // 디버깅: 로그인 응답의 경우 raw 텍스트도 확인
-  if (endpoint === '/api/auth/login' && import.meta.env?.DEV) {
-    console.log('[API] Login response raw text:', text);
-    console.log('[API] Login response headers:', Object.fromEntries(response.headers.entries()));
-  }
-  
   let payload: any = null;
   if (text) {
     try {
@@ -883,21 +860,8 @@ async function apiRequest<T>(
 
 
 
-// 쿠키에서 토큰 읽기
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop()?.split(';').shift() || null;
-  }
-  return null;
-}
-
 async function realLoginImpl(email: string, password: string): Promise<User> {
-  // 로그인 요청 전 쿠키 초기화 (디버깅용)
-  console.log('[Login] Cookies before login:', document.cookie);
-  
+  // 로그인 요청 (skipAuth: true로 토큰 없이 요청)
   const payload = await apiRequest<any>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
@@ -905,46 +869,20 @@ async function realLoginImpl(email: string, password: string): Promise<User> {
     retry: false,
   });
   
-  // 디버깅: 로그인 응답 전체 구조 확인
-  console.log('[Login] Full response payload:', JSON.stringify(payload, null, 2));
-  console.log('[Login] Payload keys:', payload ? Object.keys(payload) : 'no payload');
-  console.log('[Login] Cookies after login:', document.cookie);
+  // 응답 바디에서 accessToken 추출 및 저장
+  // processAuthPayload가 applyAuthSideEffects를 호출하여 토큰 저장
+  const user = processAuthPayload(payload);
   
-  // 응답 바디에 토큰이 없으면 쿠키에서 읽기 시도
-  const { accessToken: bodyAccessToken, refreshToken: bodyRefreshToken } = extractTokens(payload);
-  
-  if (!bodyAccessToken && !bodyRefreshToken) {
-    console.log('[Login] No tokens in response body, checking cookies...');
-    
-    // 쿠키에서 토큰 찾기 (일반적인 쿠키 이름들 시도)
-    const cookieAccessToken = 
-      getCookie('at') || 
-      getCookie('accessToken') || 
-      getCookie('access_token') ||
-      getCookie('token') ||
-      getCookie('auth_token');
-      
-    const cookieRefreshToken = 
-      getCookie('rt') || 
-      getCookie('refreshToken') || 
-      getCookie('refresh_token');
-    
-    console.log('[Login] Tokens from cookies:', {
-      hasAccessToken: !!cookieAccessToken,
-      hasRefreshToken: !!cookieRefreshToken,
-      cookieNames: document.cookie.split(';').map(c => c.trim().split('=')[0]),
-    });
-    
-    // 쿠키에서 토큰을 찾았으면 저장
-    if (cookieAccessToken || cookieRefreshToken) {
-      updateStoredTokens(cookieAccessToken ?? null, cookieRefreshToken ?? null);
-      console.log('[Login] Tokens stored from cookies');
-    } else {
-      console.warn('[Login] No tokens found in response body or cookies!');
-    }
+  // 토큰이 제대로 저장되었는지 확인
+  const storedToken = getStoredAccessToken();
+  if (!storedToken) {
+    console.error('[Login] WARNING: Access token was not stored after login!');
+    console.error('[Login] Response payload:', payload);
+  } else {
+    console.log('[Login] Access token stored successfully');
   }
   
-  return processAuthPayload(payload);
+  return user;
 }
 
 async function realRegisterImpl(data: { name: string; email: string; password: string }): Promise<User> {
