@@ -472,20 +472,56 @@ function applyAuthSideEffects(payload: any) {
   const { accessToken, refreshToken } = extractTokens(payload);
   
   // accessToken이 있으면 반드시 저장 (모바일에서 헤더로 사용하기 위해 필수)
-  if (accessToken !== undefined) {
-    updateStoredTokens(accessToken ?? null, refreshToken ?? null);
-    console.log('[Auth] Tokens stored. Access token:', accessToken ? 'present' : 'missing');
+  if (accessToken !== undefined && accessToken !== null) {
+    updateStoredTokens(accessToken, refreshToken ?? null);
     
-    // 저장 후 확인
-    const stored = getStoredAccessToken();
+    // 저장 후 즉시 확인하고 재시도
+    let stored = getStoredAccessToken();
     if (!stored && accessToken) {
-      console.error('[Auth] ERROR: Access token was not stored!');
+      // 저장 실패 시 재시도
+      updateStoredTokens(accessToken, refreshToken ?? null);
+      stored = getStoredAccessToken();
+      
+      if (!stored) {
+        // localStorage 접근 실패 가능성 - 직접 시도
+        try {
+          const storage = getStorage();
+          if (storage) {
+            storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+            if (refreshToken) {
+              storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+            }
+            stored = getStoredAccessToken();
+          }
+        } catch (e) {
+          console.error('[Auth] Failed to store token even with direct storage access:', e);
+        }
+      }
     }
-  } else if (refreshToken !== undefined) {
+  } else if (refreshToken !== undefined && refreshToken !== null) {
     // refreshToken만 있는 경우도 저장
-    updateStoredTokens(null, refreshToken ?? null);
+    updateStoredTokens(null, refreshToken);
   } else {
-    console.warn('[Auth] No tokens found in login response');
+    // 토큰을 찾지 못한 경우 - payload 전체를 다시 확인
+    console.warn('[Auth] No tokens found in login response. Trying alternative extraction...');
+    
+    // 직접 payload에서 찾기 시도
+    const directAccessToken = 
+      payload?.accessToken || 
+      payload?.access_token || 
+      payload?.token ||
+      payload?.data?.accessToken ||
+      payload?.data?.access_token ||
+      payload?.result?.accessToken ||
+      payload?.result?.access_token;
+    
+    if (directAccessToken) {
+      updateStoredTokens(directAccessToken, null);
+      const stored = getStoredAccessToken();
+      if (stored) {
+        console.log('[Auth] Token found and stored via direct extraction');
+      }
+    }
   }
 }
 
@@ -877,43 +913,61 @@ async function realLoginImpl(email: string, password: string): Promise<User> {
     retry: false,
   });
   
-  // 디버깅: 로그인 응답 전체 구조 확인
-  console.log('[Login] Full response payload:', JSON.stringify(payload, null, 2));
-  console.log('[Login] Payload keys:', payload ? Object.keys(payload) : 'no payload');
-  console.log('[Login] Payload type:', typeof payload);
-  
   // 응답 바디에서 accessToken 추출 및 저장
   // processAuthPayload가 applyAuthSideEffects를 호출하여 토큰 저장
   const user = processAuthPayload(payload);
   
-  // 토큰이 제대로 저장되었는지 확인
-  const storedToken = getStoredAccessToken();
+  // 토큰이 제대로 저장되었는지 확인 (여러 번 시도)
+  let storedToken = getStoredAccessToken();
+  
   if (!storedToken) {
-    console.error('[Login] ERROR: Access token was not stored after login!');
-    console.error('[Login] Response payload structure:', payload);
-    console.error('[Login] Attempting to extract token manually...');
-    
-    // 수동으로 토큰 추출 시도
+    // 토큰 추출 재시도
     const { accessToken, refreshToken } = extractTokens(payload);
-    console.error('[Login] Extracted tokens:', { 
-      hasAccessToken: !!accessToken, 
-      hasRefreshToken: !!refreshToken,
-      accessTokenValue: accessToken ? accessToken.substring(0, 20) + '...' : null
-    });
     
-    // 토큰이 추출되었지만 저장되지 않은 경우 다시 저장 시도
     if (accessToken) {
-      console.log('[Login] Retrying token storage...');
-      updateStoredTokens(accessToken, refreshToken ?? null);
-      const retryStored = getStoredAccessToken();
-      if (retryStored) {
-        console.log('[Login] Token stored successfully on retry');
-      } else {
-        console.error('[Login] Token storage failed even on retry!');
+      // 직접 저장 시도
+      try {
+        const storage = getStorage();
+        if (storage) {
+          storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+          if (refreshToken) {
+            storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+          }
+          storedToken = getStoredAccessToken();
+        }
+      } catch (e) {
+        // 저장 실패
       }
     }
-  } else {
-    console.log('[Login] Access token stored successfully:', storedToken.substring(0, 20) + '...');
+    
+    // 여전히 없으면 payload에서 직접 찾기
+    if (!storedToken && payload) {
+      const directToken = 
+        payload.accessToken || 
+        payload.access_token || 
+        payload.token ||
+        payload.data?.accessToken ||
+        payload.data?.access_token ||
+        payload.result?.accessToken ||
+        payload.result?.access_token;
+      
+      if (directToken) {
+        try {
+          const storage = getStorage();
+          if (storage) {
+            storage.setItem(ACCESS_TOKEN_KEY, directToken);
+            storedToken = getStoredAccessToken();
+          }
+        } catch (e) {
+          // 저장 실패
+        }
+      }
+    }
+  }
+  
+  // 최종 확인 - 토큰이 없으면 에러
+  if (!storedToken) {
+    throw new Error('로그인은 성공했지만 인증 토큰을 저장할 수 없습니다. 브라우저 설정을 확인해주세요.');
   }
   
   return user;
