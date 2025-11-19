@@ -27,6 +27,13 @@ export function SignupPage({ onLogin }: SignupPageProps) {
       return;
     }
 
+    // 이메일 도메인 검증: @ 뒤가 skuniv.ac.kr이어야 함
+    const emailParts = email.split('@');
+    if (emailParts.length !== 2 || emailParts[1] !== 'skuniv.ac.kr') {
+      toast.error('학교이메일로 회원가입해야됩니다');
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast.error('비밀번호가 일치하지 않습니다');
       return;
