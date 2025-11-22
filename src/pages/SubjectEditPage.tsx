@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Check, Plus, X } from 'lucide-react';
 import { api, Subject, Assignment } from '../services/api';
 
 import { toast } from 'sonner';
+import { InterstitialAd } from '../components/InterstitialAd';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,7 @@ export function SubjectEditPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [showColorDialog, setShowColorDialog] = useState(false);
 
   // 기본 색상 (파란색, 초록색, 노란색)
@@ -197,12 +199,19 @@ export function SubjectEditPage() {
       });
 
       toast.success('과목이 수정되었습니다');
-      navigate('/');
+      
+      // 인터스티셜 광고 표시
+      setShowInterstitialAd(true);
     } catch (error) {
       toast.error('과목 수정에 실패했습니다');
-    } finally {
       setSaving(false);
     }
+  };
+
+  const handleAdClose = () => {
+    setShowInterstitialAd(false);
+    setSaving(false);
+    navigate('/');
   };
 
   const handleDelete = async () => {
@@ -564,6 +573,9 @@ export function SubjectEditPage() {
           </form>
         </div>
       </div>
+
+      {/* 인터스티셜 광고 */}
+      <InterstitialAd show={showInterstitialAd} onClose={handleAdClose} />
     </div>
   );
 }

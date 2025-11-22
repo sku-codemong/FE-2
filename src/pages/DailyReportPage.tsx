@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
 import { Calendar } from '../components/ui/calendar';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { AdBanner } from '../components/AdBanner';
 
 export function DailyReportPage() {
   const navigate = useNavigate();
@@ -328,6 +329,11 @@ export function DailyReportPage() {
                 </div>
               );
               })()}
+            </div>
+
+            {/* 광고 배너 */}
+            <div className="mt-4 sm:mt-[24px]">
+              <AdBanner />
             </div>
           </>
         )}

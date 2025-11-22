@@ -5,6 +5,7 @@ import { Plus, Sparkles } from 'lucide-react';
 import { api, Subject } from '../services/api';
 import { Toaster, toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { AdBanner } from '../components/AdBanner';
 
 interface MainPageProps {
   userId: string;
@@ -361,6 +362,11 @@ export function MainPage({ userId }: MainPageProps) {
               </button>
             </Link>
           </div>
+        </div>
+
+        {/* 광고 배너 */}
+        <div className="mt-8">
+          <AdBanner />
         </div>
       </div>
 

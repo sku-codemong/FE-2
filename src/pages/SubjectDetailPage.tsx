@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Play, Trash2, Edit } from 'lucide-react';
 import { api, Subject, Session, Assignment } from '../services/api';
 import { toast } from 'sonner';
+import { InterstitialAd } from '../components/InterstitialAd';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,7 @@ export function SubjectDetailPage() {
   const [isPaused, setIsPaused] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [editFormData, setEditFormData] = useState({
     title: '',
     description: '',
@@ -313,6 +315,9 @@ export function SubjectDetailPage() {
       setNote(''); // 노트 초기화
       setRecentSessions([completedSession, ...recentSessions.slice(0, 4)]);
       toast.success(`학습 완료! (${completedSession.duration}분)`);
+      
+      // 인터스티셜 광고 표시
+      setShowInterstitialAd(true);
     } catch (error) {
       toast.error('세션 종료에 실패했습니다');
     }
@@ -680,6 +685,12 @@ export function SubjectDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 인터스티셜 광고 */}
+      <InterstitialAd 
+        show={showInterstitialAd} 
+        onClose={() => setShowInterstitialAd(false)}
+      />
     </>
   );
 }

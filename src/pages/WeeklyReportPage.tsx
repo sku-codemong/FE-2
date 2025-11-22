@@ -8,6 +8,7 @@ import { Calendar as CalendarComponent } from '../components/ui/calendar';
 import { ko } from 'date-fns/locale';
 
 import { Toaster, toast } from "sonner";
+import { AdBanner } from '../components/AdBanner';
 
 export function WeeklyReportPage() {
   const navigate = useNavigate();
@@ -493,6 +494,11 @@ export function WeeklyReportPage() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* 광고 배너 */}
+            <div className="mt-4 sm:mt-[24px]">
+              <AdBanner />
             </div>
           </>
         )}

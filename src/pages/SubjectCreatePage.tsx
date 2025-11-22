@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { api, Assignment } from '../services/api';
 import { toast } from 'sonner';
+import { InterstitialAd } from '../components/InterstitialAd';
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,7 @@ export function SubjectCreatePage() {
     }
   ]);
   const [loading, setLoading] = useState(false);
+  const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [showColorDialog, setShowColorDialog] = useState<{ [key: string]: boolean }>({});
 
   const addSubject = () => {
@@ -226,13 +228,20 @@ export function SubjectCreatePage() {
       }
 
       toast.success(`${subjects.length}개의 과목이 추가되었습니다!`);
-      navigate('/');
+      
+      // 인터스티셜 광고 표시
+      setShowInterstitialAd(true);
     } catch (error) {
       console.error('과목 추가 오류:', error);
       toast.error('과목 추가에 실패했습니다');
-    } finally {
       setLoading(false);
     }
+  };
+
+  const handleAdClose = () => {
+    setShowInterstitialAd(false);
+    setLoading(false);
+    navigate('/');
   };
 
   return (
@@ -564,6 +573,9 @@ export function SubjectCreatePage() {
         </div>
       </form>
       </div>
+
+      {/* 인터스티셜 광고 */}
+      <InterstitialAd show={showInterstitialAd} onClose={handleAdClose} />
     </div>
   );
 }
