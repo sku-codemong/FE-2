@@ -276,7 +276,7 @@ export function Navbar({ user, onLogout }: NavbarProps) {
       <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-1 sm:gap-2">
           <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-          <span className="text-purple-600 text-sm sm:text-base font-medium">Study Timer</span>
+          <span className="text-purple-600 text-sm sm:text-base font-medium">TimerOn</span>
         </Link>
         
         {user && (

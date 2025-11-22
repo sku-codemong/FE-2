@@ -69,7 +69,7 @@ export function SignupPage({ onLogin }: SignupPageProps) {
           </div>
         </div>
         
-        <h1 className="text-center text-neutral-950 mb-2">Study Timer</h1>
+        <h1 className="text-center text-neutral-950 mb-2">TimerOn</h1>
         <p className="text-center text-[#4a5565] mb-8">새로운 계정을 만들어보세요</p>
         
         <form onSubmit={handleSubmit} className="space-y-4">
