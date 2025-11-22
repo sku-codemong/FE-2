@@ -87,36 +87,36 @@ export function AdBanner({ variant = 'default' }: AdBannerProps) {
   }
 
   return (
-    <div className={`bg-gradient-to-r ${currentAd.gradient} rounded-[14px] p-6 border border-[rgba(0,0,0,0.1)] relative overflow-hidden transition-all duration-500`}>
+    <div className={`bg-gradient-to-r ${currentAd.gradient} rounded-[14px] p-4 sm:p-6 border border-[rgba(0,0,0,0.1)] relative overflow-hidden transition-all duration-500`}>
       {/* Navigation Buttons */}
       <button
         onClick={goToPrevious}
-        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-all z-10 shadow-sm"
+        className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 w-7 h-7 sm:w-8 sm:h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-all z-10 shadow-sm"
       >
-        <ChevronLeft className="w-4 h-4 text-neutral-950" />
+        <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 text-neutral-950" />
       </button>
       <button
         onClick={goToNext}
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-all z-10 shadow-sm"
+        className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 w-7 h-7 sm:w-8 sm:h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-all z-10 shadow-sm"
       >
-        <ChevronRight className="w-4 h-4 text-neutral-950" />
+        <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-neutral-950" />
       </button>
 
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 pr-4">
-          <p className="text-[12px] text-[#6a7282] mb-2">광고</p>
-          <h3 className="text-[18px] text-neutral-950 mb-2 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0 mb-3 sm:mb-4">
+        <div className="flex-1 pr-0 sm:pr-4 min-w-0">
+          <p className="text-[11px] sm:text-[12px] text-[#6a7282] mb-1 sm:mb-2">광고</p>
+          <h3 className="text-[16px] sm:text-[18px] text-neutral-950 mb-1 sm:mb-2 animate-in fade-in duration-500 break-words">
             {currentAd.title} {currentAd.emoji}
           </h3>
-          <p className="text-[14px] text-[#6a7282] mb-4 whitespace-pre-line animate-in fade-in duration-700">
+          <p className="text-[12px] sm:text-[14px] text-[#6a7282] mb-3 sm:mb-4 whitespace-pre-line animate-in fade-in duration-700 break-words">
             {currentAd.description}
           </p>
-          <button className="bg-[#9810fa] hover:bg-[#8610da] text-white rounded-[8px] px-6 h-[36px] text-[14px] flex items-center gap-2 transition-colors">
+          <button className="bg-[#9810fa] hover:bg-[#8610da] text-white rounded-[8px] px-4 sm:px-6 h-[32px] sm:h-[36px] text-[12px] sm:text-[14px] flex items-center gap-2 transition-colors w-full sm:w-auto">
             프리미엄 알아보기
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
         </div>
-        <div className="ml-4 w-[120px] h-[120px] bg-gradient-to-br from-purple-200 to-blue-200 rounded-[12px] flex items-center justify-center text-[40px] animate-in zoom-in-95 duration-500">
+        <div className="ml-0 sm:ml-4 w-[80px] h-[80px] sm:w-[120px] sm:h-[120px] bg-gradient-to-br from-purple-200 to-blue-200 rounded-[12px] flex items-center justify-center text-[32px] sm:text-[40px] animate-in zoom-in-95 duration-500 flex-shrink-0 self-center sm:self-auto">
           {currentAd.emoji}
         </div>
       </div>
@@ -136,7 +136,7 @@ export function AdBanner({ variant = 'default' }: AdBannerProps) {
         ))}
       </div>
 
-      <p className="text-[10px] text-[#9ca3af] text-center mt-4">
+      <p className="text-[9px] sm:text-[10px] text-[#9ca3af] text-center mt-3 sm:mt-4 px-2">
         실제 운영 시 Google AdSense 또는 다른 광고 네트워크가 여기에 표시됩니다
       </p>
     </div>

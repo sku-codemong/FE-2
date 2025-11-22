@@ -54,48 +54,48 @@ export function InterstitialAd({ show, onClose }: InterstitialAdProps) {
   const currentAd = ADS[currentIndex];
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-[20px] max-w-[500px] w-full p-8 relative animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-black/60 z-[10000] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-[16px] sm:rounded-[20px] max-w-[500px] w-full p-5 sm:p-8 relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
         {/* Close Button - 항상 표시 */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors z-10"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors z-10"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
 
         {/* Ad Content */}
         <div className="text-center">
           <div 
-            className={`w-[100px] h-[100px] bg-gradient-to-br ${currentAd.gradient} rounded-[20px] flex items-center justify-center text-[50px] mx-auto mb-6 transition-all duration-500 animate-in zoom-in-95`}
+            className={`w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] bg-gradient-to-br ${currentAd.gradient} rounded-[16px] sm:rounded-[20px] flex items-center justify-center text-[40px] sm:text-[50px] mx-auto mb-4 sm:mb-6 transition-all duration-500 animate-in zoom-in-95`}
             key={currentIndex}
           >
             {currentAd.emoji}
           </div>
           
-          <p className="text-[12px] text-[#6a7282] mb-3">광고</p>
-          <h2 className="text-[24px] text-neutral-950 mb-4 animate-in fade-in duration-500">
+          <p className="text-[11px] sm:text-[12px] text-[#6a7282] mb-2 sm:mb-3">광고</p>
+          <h2 className="text-[18px] sm:text-[24px] text-neutral-950 mb-3 sm:mb-4 animate-in fade-in duration-500 break-words px-2">
             {currentAd.title}
           </h2>
-          <p className="text-[16px] text-[#4a5565] mb-6 whitespace-pre-line animate-in fade-in duration-700">
+          <p className="text-[14px] sm:text-[16px] text-[#4a5565] mb-5 sm:mb-6 whitespace-pre-line animate-in fade-in duration-700 break-words px-2">
             {currentAd.description}
           </p>
 
-          <button className="bg-[#9810fa] hover:bg-[#8610da] text-white rounded-[10px] px-8 h-[44px] text-[16px] flex items-center gap-2 transition-colors mx-auto mb-4">
+          <button className="bg-[#9810fa] hover:bg-[#8610da] text-white rounded-[8px] sm:rounded-[10px] px-6 sm:px-8 h-[40px] sm:h-[44px] text-[14px] sm:text-[16px] flex items-center gap-2 transition-colors mx-auto mb-3 sm:mb-4 w-full sm:w-auto justify-center">
             자세히 알아보기
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
           <button
             onClick={onClose}
-            className="text-[12px] text-[#6a7282] hover:text-neutral-950 underline"
+            className="text-[11px] sm:text-[12px] text-[#6a7282] hover:text-neutral-950 underline"
           >
             광고 건너뛰기
           </button>
         </div>
 
         {/* Indicators */}
-        <div className="flex items-center justify-center gap-2 mt-6">
+        <div className="flex items-center justify-center gap-2 mt-4 sm:mt-6">
           {ADS.map((_, index) => (
             <div
               key={index}
@@ -108,7 +108,7 @@ export function InterstitialAd({ show, onClose }: InterstitialAdProps) {
           ))}
         </div>
 
-        <p className="text-[10px] text-[#9ca3af] text-center mt-4">
+        <p className="text-[9px] sm:text-[10px] text-[#9ca3af] text-center mt-3 sm:mt-4 px-2">
           실제 운영 시 Google AdSense 전면 광고가 여기에 표시됩니다
         </p>
       </div>
