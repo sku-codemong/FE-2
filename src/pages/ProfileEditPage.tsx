@@ -182,7 +182,11 @@ export function ProfileEditPage({ onProfileUpdate }: ProfileEditPageProps) {
         </button>
 
         <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-[33px]">
-          <h1 className="text-[20px] text-neutral-950 mb-8">프로필 수정</h1>
+          <div className="flex flex-col items-center mb-8">
+            <img src="/logo.png" alt="TimerOn Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain mb-2" />
+            <img src="/name.png" alt="TimerOn" className="h-10 sm:h-14 max-w-[250px] sm:max-w-[320px] object-contain mb-4" />
+            <h1 className="text-[20px] text-neutral-950">프로필 수정</h1>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
