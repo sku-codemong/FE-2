@@ -9,7 +9,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 
 interface LoginPageProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: User) => Promise<void> | void;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -64,7 +64,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         toast.success('로그인 성공! 프로필을 설정해주세요');
       } else {
         // 프로필 설정이 완료된 경우에만 onLogin 호출
-        onLogin(user);
+        await onLogin(user);
         toast.success('로그인 성공!');
         navigate('/');
       }
@@ -104,7 +104,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       console.log('isCompleted after update:', updatedUser.isCompleted);
 
       // 프로필 설정 완료 후 onLogin 호출하여 App.tsx에 사용자 정보 전달
-      onLogin(updatedUser);
+      await onLogin(updatedUser);
       toast.success('프로필이 설정되었습니다!');
       setShowProfileSetup(false);
       // 프로필 설정 완료 후 메인 페이지로 이동
@@ -116,11 +116,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
   };
 
-  const handleSkipProfile = () => {
+  const handleSkipProfile = async () => {
     setShowProfileSetup(false);
     // 나중에 하기를 누르면 로그인한 사용자 정보로 onLogin 호출
     if (loggedInUser) {
-      onLogin(loggedInUser);
+      await onLogin(loggedInUser);
     }
     // 나중에 하기를 누르면 메인 페이지로 이동
     navigate('/');

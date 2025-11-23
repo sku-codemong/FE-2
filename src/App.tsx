@@ -84,9 +84,18 @@ function App() {
     warmUpRefresh();
   }, [user?.id]);
 
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+  const handleLogin = async (userData: User) => {
+    // 로그인 후 최신 사용자 정보를 가져와서 profileImageUrl 등 최신 정보 반영
+    try {
+      const latestUser = await api.getMe();
+      setUser(latestUser);
+      localStorage.setItem('user', JSON.stringify(latestUser));
+    } catch (error) {
+      // getMe 실패 시 로그인 응답 데이터 사용
+      console.warn('Failed to fetch latest user info, using login response:', error);
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+    }
   };
 
   const handleLogout = async () => {
