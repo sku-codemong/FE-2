@@ -63,14 +63,11 @@ export function SignupPage({ onLogin }: SignupPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <div className="flex items-center justify-center mb-8">
-          <div className="bg-[#9810fa] rounded-full p-3">
-            <BarChart3 className="size-8 text-white" />
-          </div>
+        <div className="relative flex items-center justify-center mb-0">
+          <img src="/name.png" alt="TimerOn" className="h-48 sm:h-60 max-w-[400px] sm:max-w-[500px] object-contain" />
+          <img src="/logo.png" alt="TimerOn Logo" className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[20%] w-20 h-20 sm:w-24 sm:h-24 object-contain" />
         </div>
-        
-        <h1 className="text-center text-neutral-950 mb-2">TimerOn</h1>
-        <p className="text-center text-[#4a5565] mb-8">새로운 계정을 만들어보세요</p>
+        <p className="text-center text-[#4a5565] mb-6 -mt-8 sm:-mt-10">새로운 계정을 만들어보세요</p>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
