@@ -273,7 +273,7 @@ export function Navbar({ user, onLogout }: NavbarProps) {
 
   return (
     <nav className="border-b bg-white sticky top-0 z-50">
-      <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between h-[56px] sm:h-[64px] overflow-hidden">
+      <div className="container mx-auto px-2 sm:px-4 flex items-center justify-between h-[56px] sm:h-[64px] overflow-hidden">
         <Link to="/" className="flex items-center gap-2 sm:gap-3 h-full">
           <img src="/logo.png" alt="TimerOn Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain flex-shrink-0" />
           <img src="/name.png" alt="TimerOn" className="h-20 sm:h-24 max-w-[400px] sm:max-w-[480px] object-contain" />

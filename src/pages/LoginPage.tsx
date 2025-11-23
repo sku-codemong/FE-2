@@ -180,8 +180,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <DialogContent className="max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex flex-col items-center mb-4">
-              <img src="/logo.png" alt="TimerOn Logo" className="w-16 h-16 sm:w-20 sm:h-20 object-contain mb-2" />
-              <img src="/name.png" alt="TimerOn" className="h-12 sm:h-16 max-w-[300px] sm:max-w-[360px] object-contain mb-4" />
+              <div className="flex items-center justify-center mb-4">
+                <img src="/logo.png" alt="TimerOn Logo" className="w-32 h-32 sm:w-40 sm:h-40 object-contain" />
+              </div>
               <DialogTitle className="text-center">프로필 설정</DialogTitle>
               <DialogDescription className="text-center mt-2">
                 처음 로그인하셨네요! 닉네임, 학년, 성별을 설정해주세요.
