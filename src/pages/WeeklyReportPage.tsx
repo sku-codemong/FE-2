@@ -51,26 +51,25 @@ export function WeeklyReportPage() {
   const loadReport = async () => {
     setLoading(true);
     try {
-      // 이번 주 월요일부터 오늘까지 각 날짜별로 세션 조회 (초 단위 계산용)
-      const today = new Date();
-      const todayStr = formatLocalYYYYMMDD(today);
+      // 해당 주의 월요일부터 일요일까지 각 날짜별로 세션 조회 (초 단위 계산용)
       const monday = new Date(weekStart);
       monday.setHours(0, 0, 0, 0);
+      
+      // 일요일 계산 (월요일 + 6일)
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
       
       const sessionPromises: Promise<Session[]>[] = [];
       const currentDate = new Date(monday);
       currentDate.setHours(0, 0, 0, 0);
       
-      // 월요일부터 오늘까지 각 날짜별로 세션 조회
-      while (true) {
+      // 월요일부터 일요일까지 각 날짜별로 세션 조회 (해당 주 전체)
+      for (let i = 0; i < 7; i++) {
         const dateStr = formatLocalYYYYMMDD(currentDate);
         sessionPromises.push(
           api.getSessions({ date: dateStr }).catch(() => [] as Session[])
         );
-        
-        if (dateStr === todayStr) {
-          break;
-        }
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
@@ -81,6 +80,23 @@ export function WeeklyReportPage() {
       ]);
       
       const allSessions = sessionsArrays.flat();
+      
+      // 해당 주의 범위 내에 있는 세션만 필터링 (날짜 범위 체크)
+      const weekStartDate = new Date(monday);
+      weekStartDate.setHours(0, 0, 0, 0);
+      const weekEndDate = new Date(sunday);
+      weekEndDate.setHours(23, 59, 59, 999);
+      
+      const filteredSessions = allSessions.filter(s => {
+        if (!s || !s.startTime) return false;
+        try {
+          const sessionDate = new Date(s.startTime);
+          sessionDate.setHours(0, 0, 0, 0);
+          return sessionDate >= weekStartDate && sessionDate <= weekEndDate;
+        } catch {
+          return false;
+        }
+      });
       
       // 과목 정보를 사용하여 리포트의 과목 색상 매핑
       const reportWithColors = {
@@ -96,7 +112,7 @@ export function WeeklyReportPage() {
       
       setReport(reportWithColors);
       setSubjects(subjectsData);
-      setSessions(allSessions);
+      setSessions(filteredSessions);
     } catch (error) {
       toast.error('리포트를 불러오는데 실패했습니다');
     } finally {
@@ -165,7 +181,8 @@ export function WeeklyReportPage() {
     
     return {
       date: days[date.getDay()],
-      minutes: minutes || 0 // 최소 0 보장
+      minutes: minutes || 0, // 최소 0 보장
+      seconds: daySeconds // 초 단위도 저장 (학습일 계산용)
     };
   });
 
@@ -253,8 +270,8 @@ export function WeeklyReportPage() {
     ? ((totalSeconds / totalTargetSeconds) * 100).toFixed(1) 
     : '0.0';
   
-  // 학습일 계산 (세션 데이터에서 직접 계산)
-  const studyDays = dailyChartData.filter(d => d.minutes > 0).length;
+  // 학습일 계산 (초 단위로 계산 - 1초 이상이면 학습한 것으로 간주)
+  const studyDays = dailyChartData.filter(d => d.seconds > 0).length;
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
