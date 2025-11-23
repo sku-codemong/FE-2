@@ -59,6 +59,15 @@ export function SubjectEditPage() {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  // datetime-local 값을 UTC ISO 문자열로 변환 (입력한 시간을 그대로 UTC로 저장)
+  const localDateTimeToISO = (localDateTimeString: string) => {
+    if (!localDateTimeString) return undefined;
+    // datetime-local 형식: "YYYY-MM-DDTHH:mm"
+    // 입력한 시간을 그대로 UTC로 저장 (시간대 변환 없이)
+    // 예: "2025-11-27T18:00" -> "2025-11-27T18:00:00.000Z"
+    return `${localDateTimeString}:00.000Z`;
+  };
+
   // 기본 색상 (파란색, 초록색, 노란색)
   const defaultColors = [
     { value: '#3B82F6', label: '파란색' },
@@ -450,7 +459,7 @@ export function SubjectEditPage() {
                           updateAssignment(
                             assignment.id,
                             'dueAt',
-                            e.target.value ? new Date(e.target.value).toISOString() : undefined
+                            localDateTimeToISO(e.target.value)
                           )
                         }
                         className="flex-1 bg-[#f3f3f5] rounded-[8px] h-[32px] px-3 text-[14px] text-neutral-950 border-0 focus:outline-none focus:ring-2 focus:ring-[#9810fa]"
