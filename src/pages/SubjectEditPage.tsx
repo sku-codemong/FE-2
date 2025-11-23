@@ -47,6 +47,7 @@ export function SubjectEditPage() {
   const [saving, setSaving] = useState(false);
   const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [showColorDialog, setShowColorDialog] = useState(false);
+  const [originalAssignmentIds, setOriginalAssignmentIds] = useState<number[]>([]);
 
   // 로컬 시간을 datetime-local 형식으로 변환 (UTC 시간 문자열에서 직접 추출)
   const formatLocalDateTime = (dateString: string) => {
@@ -122,6 +123,16 @@ export function SubjectEditPage() {
             return [] as Assignment[];
           });
 
+        const mappedTasks = tasks.map((assignment) => ({
+          ...assignment,
+          description: assignment.description ?? '',
+          dueAt: assignment.dueAt ?? undefined,
+          estimatedMin:
+            assignment.estimatedMin !== null && assignment.estimatedMin !== undefined
+              ? assignment.estimatedMin
+              : 60,
+        }));
+
         setFormData({
           name: data.name,
           color: data.color ?? COLORS[0],
@@ -129,16 +140,11 @@ export function SubjectEditPage() {
           credit: data.credit ?? (data as any).weight ?? 0,
           difficulty: data.difficulty,
           hasExtraWork: tasks.length > 0 || data.hasExtraWork,
-          assignments: tasks.map((assignment) => ({
-            ...assignment,
-            description: assignment.description ?? '',
-            dueAt: assignment.dueAt ?? undefined,
-            estimatedMin:
-              assignment.estimatedMin !== null && assignment.estimatedMin !== undefined
-                ? assignment.estimatedMin
-                : 60,
-          })),
+          assignments: mappedTasks,
         });
+
+        // 원래 로드된 과제 ID 목록 저장 (서버에 존재하는 과제들)
+        setOriginalAssignmentIds(tasks.map(t => t.id).filter(id => id < 1000000000000));
       }
     } catch (error) {
       toast.error('과목 정보를 불러오는데 실패했습니다');
@@ -216,10 +222,26 @@ export function SubjectEditPage() {
         hasExtraWork: formData.hasExtraWork,
       });
 
-      // 과제 생성/수정 처리
+      // 과제 생성/수정/삭제 처리
       const subjectIdNum = Number(subjectId);
       const taskPromises: Promise<any>[] = [];
 
+      // 현재 formData에 있는 과제 ID 목록
+      const currentAssignmentIds = formData.assignments
+        .map(a => a.id)
+        .filter(id => id < 1000000000000); // 임시 ID 제외
+
+      // 삭제된 과제 찾기 (원래 있던 과제 중 현재 목록에 없는 것)
+      const deletedAssignmentIds = originalAssignmentIds.filter(
+        id => !currentAssignmentIds.includes(id)
+      );
+
+      // 삭제된 과제 삭제 API 호출
+      for (const deletedId of deletedAssignmentIds) {
+        taskPromises.push(api.deleteTask(deletedId));
+      }
+
+      // 현재 과제들 생성/수정
       for (const assignment of formData.assignments) {
         const sanitizedAssignment = {
           title: assignment.title.trim(),
@@ -258,7 +280,7 @@ export function SubjectEditPage() {
         }
       }
 
-      // 모든 과제 생성/수정 완료 대기
+      // 모든 과제 생성/수정/삭제 완료 대기
       if (taskPromises.length > 0) {
         await Promise.all(taskPromises);
       }
