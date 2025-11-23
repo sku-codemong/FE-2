@@ -48,6 +48,17 @@ export function SubjectEditPage() {
   const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [showColorDialog, setShowColorDialog] = useState(false);
 
+  // 로컬 시간을 datetime-local 형식으로 변환
+  const formatLocalDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   // 기본 색상 (파란색, 초록색, 노란색)
   const defaultColors = [
     { value: '#3B82F6', label: '파란색' },
@@ -403,21 +414,25 @@ export function SubjectEditPage() {
                       <label className="text-[12px] text-[#6a7282] whitespace-nowrap">예상 소요시간:</label>
                       <input
                         type="number"
-                        min="10"
-                        step="10"
+                        min="0"
+                        step="1"
                         inputMode="numeric"
                         value={
                           assignment.estimatedMin === undefined || assignment.estimatedMin === null
                             ? ''
                             : assignment.estimatedMin
                         }
-                        onChange={(e) =>
-                          updateAssignment(
-                            assignment.id,
-                            'estimatedMin',
-                            e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0
-                          )
-                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            updateAssignment(assignment.id, 'estimatedMin', undefined);
+                          } else {
+                            const numValue = parseInt(value, 10);
+                            if (!isNaN(numValue) && numValue >= 0) {
+                              updateAssignment(assignment.id, 'estimatedMin', numValue);
+                            }
+                          }
+                        }}
                         className="bg-[#f3f3f5] rounded-[8px] h-[32px] px-3 text-[14px] text-neutral-950 border-0 focus:outline-none focus:ring-2 focus:ring-[#9810fa] w-[100px]"
                       />
                       <span className="text-[12px] text-[#6a7282]">분</span>
@@ -428,7 +443,7 @@ export function SubjectEditPage() {
                         type="datetime-local"
                         value={
                           assignment.dueAt
-                            ? new Date(assignment.dueAt).toISOString().slice(0, 16)
+                            ? formatLocalDateTime(assignment.dueAt)
                             : ''
                         }
                         onChange={(e) =>
