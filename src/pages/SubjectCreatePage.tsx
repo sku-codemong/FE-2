@@ -65,8 +65,16 @@ export function SubjectCreatePage() {
   const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [showColorDialog, setShowColorDialog] = useState<{ [key: string]: boolean }>({});
 
-  // 로컬 시간을 datetime-local 형식으로 변환
+  // 로컬 시간을 datetime-local 형식으로 변환 (UTC 시간 문자열에서 직접 추출)
   const formatLocalDateTime = (dateString: string) => {
+    if (!dateString) return '';
+    // UTC 시간 문자열에서 직접 날짜와 시간 추출 (시간대 변환 없이)
+    // 예: "2025-11-27T18:00:00.000Z" -> "2025-11-27T18:00"
+    const match = dateString.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+    if (match) {
+      return `${match[1]}T${match[2]}`;
+    }
+    // 형식이 맞지 않으면 기존 방식 사용
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');

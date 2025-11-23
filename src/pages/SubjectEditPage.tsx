@@ -48,8 +48,16 @@ export function SubjectEditPage() {
   const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [showColorDialog, setShowColorDialog] = useState(false);
 
-  // 로컬 시간을 datetime-local 형식으로 변환
+  // 로컬 시간을 datetime-local 형식으로 변환 (UTC 시간 문자열에서 직접 추출)
   const formatLocalDateTime = (dateString: string) => {
+    if (!dateString) return '';
+    // UTC 시간 문자열에서 직접 날짜와 시간 추출 (시간대 변환 없이)
+    // 예: "2025-11-27T18:00:00.000Z" -> "2025-11-27T18:00"
+    const match = dateString.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+    if (match) {
+      return `${match[1]}T${match[2]}`;
+    }
+    // 형식이 맞지 않으면 기존 방식 사용
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -198,16 +206,7 @@ export function SubjectEditPage() {
     setSaving(true);
 
     try {
-      const sanitizedAssignments = formData.assignments.map((assignment) => ({
-        ...assignment,
-        description: assignment.description?.trim() ? assignment.description.trim() : undefined,
-        dueAt: assignment.dueAt ? assignment.dueAt : undefined,
-        estimatedMin:
-          assignment.estimatedMin && assignment.estimatedMin > 0
-            ? assignment.estimatedMin
-            : undefined,
-      }));
-
+      // 과목 정보 업데이트
       await api.updateSubject(subjectId, {
         name: formData.name,
         color: formData.color,
@@ -215,8 +214,54 @@ export function SubjectEditPage() {
         credit: formData.credit,
         difficulty: formData.difficulty,
         hasExtraWork: formData.hasExtraWork,
-        assignments: sanitizedAssignments,
       });
+
+      // 과제 생성/수정 처리
+      const subjectIdNum = Number(subjectId);
+      const taskPromises: Promise<any>[] = [];
+
+      for (const assignment of formData.assignments) {
+        const sanitizedAssignment = {
+          title: assignment.title.trim(),
+          description: assignment.description?.trim() ? assignment.description.trim() : undefined,
+          dueAt: assignment.dueAt ? assignment.dueAt : undefined,
+          estimatedMin:
+            assignment.estimatedMin && assignment.estimatedMin > 0
+              ? assignment.estimatedMin
+              : undefined,
+        };
+
+        // 새로 추가된 과제 (id가 임시인 경우)는 생성
+        // 기존 과제는 수정
+        if (assignment.id > 1000000000000) {
+          // 임시 ID (Date.now()로 생성된 것)인 경우 새로 생성
+          taskPromises.push(
+            api.createTask({
+              subjectId: subjectIdNum,
+              type: 'assignment',
+              title: sanitizedAssignment.title,
+              description: sanitizedAssignment.description,
+              dueAt: sanitizedAssignment.dueAt,
+              estimatedMin: sanitizedAssignment.estimatedMin,
+            })
+          );
+        } else {
+          // 기존 과제는 수정
+          taskPromises.push(
+            api.updateTask(assignment.id, {
+              title: sanitizedAssignment.title,
+              description: sanitizedAssignment.description,
+              dueAt: sanitizedAssignment.dueAt,
+              estimatedMin: sanitizedAssignment.estimatedMin,
+            })
+          );
+        }
+      }
+
+      // 모든 과제 생성/수정 완료 대기
+      if (taskPromises.length > 0) {
+        await Promise.all(taskPromises);
+      }
 
       toast.success('과목이 수정되었습니다');
       
