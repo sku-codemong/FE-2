@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User as UserIcon, LogOut, BarChart3, Bell, Users } from 'lucide-react';
 import { Badge } from './ui/badge';
@@ -14,6 +14,7 @@ interface NavbarProps {
 
 export function Navbar({ user, onLogout }: NavbarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [imageError, setImageError] = useState<boolean>(false);
   
   // 디버깅: user 객체와 profileImageUrl 확인
@@ -234,7 +235,12 @@ export function Navbar({ user, onLogout }: NavbarProps) {
       setNotificationOpen(false);
       // 페이지 이동
       if (user?.id) {
-        navigate(`/friends/${user.id}`);
+        const friendsPath = `/friends/${user.id}`;
+        if (location.pathname === friendsPath) {
+          navigate(0);
+        } else {
+          navigate(friendsPath);
+        }
       }
     }
   };
