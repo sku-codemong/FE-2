@@ -14,6 +14,7 @@ import { Calendar, Clock, TrendingUp, Edit, ArrowLeft } from 'lucide-react';
 import { api, Subject, User, Session } from '../services/api';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
+import { UserAvatar } from '../components/UserAvatar';
 
 export function ProfilePage() {
   const { userId } = useParams();
@@ -338,28 +339,11 @@ export function ProfilePage() {
             <div className="bg-white rounded-[14px] border border-[rgba(0,0,0,0.1)] p-4 sm:p-6 w-full">
               {/* 프로필 이미지 */}
               <div className="flex justify-center mb-4 sm:mb-6">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {user.profileImageUrl ? (
-                    <img 
-                      src={user.profileImageUrl} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // 이미지 로드 실패 시 기본 이미지로 대체
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.innerHTML = `<span class="text-4xl text-gray-500">${(user.nickname || user.email || 'U').charAt(0).toUpperCase()}</span>`;
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span className="text-4xl text-gray-500">
-                      {(user.nickname || user.email || 'U').charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
+                <UserAvatar
+                  src={user.profileImageUrl || undefined}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full"
+                  iconClassName="w-6 h-6 sm:w-8 sm:h-8"
+                />
               </div>
               <h2 className="text-[16px] text-neutral-950 mb-4">기본 정보</h2>
               <div className="space-y-3">

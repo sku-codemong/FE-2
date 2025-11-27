@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api, User } from '../services/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../components/UserAvatar';
 
 type FormGender = 'male' | 'female';
 
@@ -128,31 +129,13 @@ export function ProfileEditPage({ onProfileUpdate }: ProfileEditPageProps) {
     setLocalImagePreview(previewUrl);
   };
 
-  const renderAvatar = () => {
-    const imageSrc = localImagePreview || profileImageUrl;
-    if (imageSrc) {
-      return (
-        <img
-          src={imageSrc}
-          alt="프로필 이미지"
-          className="w-full h-full object-cover"
-        />
-      );
-    }
-
-    const initial =
-      (formData.nickname?.charAt(0) ||
-        user?.nickname?.charAt(0) ||
-        user?.email?.charAt(0) ||
-        '?'
-      ).toUpperCase();
-
-    return (
-      <span className="text-2xl font-semibold text-white flex items-center justify-center h-full w-full bg-gradient-to-br from-[#9810fa] to-[#2b7fff]">
-        {initial}
-      </span>
-    );
-  };
+  const renderAvatar = () => (
+    <UserAvatar
+      src={localImagePreview || profileImageUrl || undefined}
+      className="w-full h-full rounded-full"
+      iconClassName="w-5 h-5"
+    />
+  );
 
   if (loading) {
     return (

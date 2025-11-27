@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../components/ui/dialog';
+import { UserAvatar } from '../components/UserAvatar';
 
 interface FriendWithStats {
   id: string;
@@ -368,27 +369,11 @@ export function FriendsPage() {
                   >
                     <div className="flex flex-col items-center text-center">
                       {/* 프로필 이미지 */}
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-2 sm:mb-3 shadow-lg">
-                        {friend.profileImageUrl ? (
-                          <img 
-                            src={friend.profileImageUrl} 
-                            alt={friend.nickname} 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `<span class="text-2xl text-gray-500">${(friend.nickname || 'U').charAt(0).toUpperCase()}</span>`;
-                              }
-                            }}
-                          />
-                        ) : (
-                          <span className="text-2xl text-gray-500">
-                            {(friend.nickname || 'U').charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
+                      <UserAvatar
+                        src={friend.profileImageUrl || undefined}
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden mb-2 sm:mb-3 shadow-lg"
+                        iconClassName="w-5 h-5 sm:w-6 sm:h-6"
+                      />
 
                       {/* 닉네임 */}
                       <h3 className="text-[14px] sm:text-[16px] text-neutral-950 mb-1">
@@ -457,27 +442,11 @@ export function FriendsPage() {
                     </div>
 
                     {/* 프로필 이미지 */}
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                      {friend.profileImageUrl ? (
-                        <img 
-                          src={friend.profileImageUrl} 
-                          alt={friend.nickname} 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `<span class="text-[16px] text-gray-500">${(friend.nickname || 'U').charAt(0).toUpperCase()}</span>`;
-                            }
-                          }}
-                        />
-                      ) : (
-                        <span className="text-[16px] text-gray-500">
-                          {(friend.nickname || 'U').charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <UserAvatar
+                      src={friend.profileImageUrl || undefined}
+                      className="w-12 h-12 rounded-full overflow-hidden"
+                      iconClassName="w-4 h-4"
+                    />
 
                     {/* 정보 */}
                     <div>
