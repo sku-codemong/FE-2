@@ -13,6 +13,11 @@ interface SubjectCardProps {
 
 export function SubjectCard({ subject, dailyProgress = 0, dailyProgressSeconds, userId, onArchive, overrideTargetDailyMin }: SubjectCardProps) {
   const targetDaily = (overrideTargetDailyMin !== undefined ? overrideTargetDailyMin : (subject.targetDailyMin || 0));
+  const subjectColor = subject.color || '#3B82F6';
+  const hasAssignments =
+    Boolean(subject.hasExtraWork) ||
+    Boolean((subject as any).hasExtraWork) ||
+    (Array.isArray(subject.assignments) && subject.assignments.length > 0);
   
   // 초 단위 데이터가 있으면 사용, 없으면 분 단위로 변환
   const progressSeconds = dailyProgressSeconds !== undefined ? dailyProgressSeconds : (dailyProgress * 60);
@@ -28,7 +33,7 @@ export function SubjectCard({ subject, dailyProgress = 0, dailyProgressSeconds, 
         <div className="flex items-center gap-3">
           <div 
             className="w-4 h-4 rounded-full shrink-0" 
-            style={{ backgroundColor: subject.color }}
+            style={{ backgroundColor: subjectColor }}
           />
           <div>
             <h3 className="text-[16px] text-neutral-950 mb-1">{subject.name}</h3>
@@ -38,7 +43,7 @@ export function SubjectCard({ subject, dailyProgress = 0, dailyProgressSeconds, 
               </span>
               <span className="text-[#99a1af]">•</span>
               <span className="text-[#6a7282]">난이도 {subject.difficulty}</span>
-              {subject.hasExtraWork && (
+              {hasAssignments && (
                 <>
                   <span className="text-[#99a1af]">•</span>
                   <span className="text-[#9810fa]">과제있음</span>
@@ -93,7 +98,7 @@ export function SubjectCard({ subject, dailyProgress = 0, dailyProgressSeconds, 
               <div 
                 className="h-full rounded-full transition-all"
                 style={{ 
-                  backgroundColor: subject.color,
+                  backgroundColor: subjectColor,
                   width: `${Math.min(progressPercentage, 100)}%`
                 }}
               />
@@ -103,7 +108,7 @@ export function SubjectCard({ subject, dailyProgress = 0, dailyProgressSeconds, 
           <Link to={`/subject/${userId}/${subject.id}`} className="block mt-6">
             <button 
               className="w-full h-[36px] rounded-[8px] text-white text-[14px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: subject.color }}
+              style={{ backgroundColor: subjectColor }}
             >
               <Clock className="w-4 h-4" />
               학습 시작

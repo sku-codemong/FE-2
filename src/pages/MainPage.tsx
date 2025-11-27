@@ -58,7 +58,25 @@ export function MainPage({ userId }: MainPageProps) {
       console.log('[MainPage] Loading data...');
       const subjectsData = await api.getSubjects(true); // includeArchived=true로 모든 과목 가져오기
       console.log('[MainPage] Subjects loaded:', subjectsData.length);
-      setAllSubjects(subjectsData);
+
+      // 각 과목의 과제 여부를 최신 상태로 조회
+      const subjectsWithAssignments = await Promise.all(
+        subjectsData.map(async (subject) => {
+          try {
+            const tasks = await api.getTasks({ subjectId: subject.id });
+            const hasAssignments = Array.isArray(tasks) && tasks.length > 0;
+            return {
+              ...subject,
+              hasExtraWork: hasAssignments ? true : subject.hasExtraWork,
+              assignments: hasAssignments ? tasks : subject.assignments,
+            };
+          } catch (taskError) {
+            console.warn(`[MainPage] Failed to fetch tasks for subject ${subject.id}:`, taskError);
+            return subject;
+          }
+        })
+      );
+      setAllSubjects(subjectsWithAssignments);
 
       // 오늘 학습 시간 계산 (초 단위로 합산)
       const today = formatLocalYYYYMMDD(new Date());
